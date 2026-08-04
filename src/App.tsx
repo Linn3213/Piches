@@ -6,6 +6,8 @@ import Login from "@/pages/Login";
 import Pipeline from "@/pages/Pipeline";
 import Brands from "@/pages/Brands";
 import BrandDetail from "@/pages/BrandDetail";
+import Tasks from "@/pages/Tasks";
+import Statistics from "@/pages/Statistics";
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
           <Route index element={<Pipeline />} />
           <Route path="varumarken" element={<Brands />} />
           <Route path="varumarken/:id" element={<BrandDetail />} />
+          <Route path="uppgifter" element={<Tasks />} />
+          <Route path="statistik" element={<Statistics />} />
         </Route>
       </Routes>
     </AuthProvider>
