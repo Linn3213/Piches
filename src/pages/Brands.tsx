@@ -55,7 +55,7 @@ export default function Brands() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-ink/50">Laddar...</p>
+        <p className="text-sm text-on-surface-variant">Laddar...</p>
       ) : visible.length === 0 ? (
         <Empty
           title={brands?.length ? "Inga träffar" : "Inga varumärken än"}
@@ -69,12 +69,12 @@ export default function Brands() {
                 <Card className="flex items-center justify-between gap-3 transition hover:border-ink/25">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{brand.name}</p>
-                    <p className="mt-0.5 text-sm text-ink/50">
+                    <p className="mt-0.5 text-sm text-on-surface-variant">
                       {BRAND_STATUS_LABEL[brand.status]}
                       {brand.contact_name ? ` · ${brand.contact_name}` : ""}
                     </p>
                   </div>
-                  <Badge tone={brand.tier === 1 ? "warm" : "neutral"}>{TIER_LABEL[brand.tier]}</Badge>
+                  <Badge tone={brand.tier === 1 ? "primary" : "neutral"}>{TIER_LABEL[brand.tier]}</Badge>
                 </Card>
               </Link>
             </li>
@@ -93,7 +93,7 @@ export default function Brands() {
           }
         />
         {create.isError && (
-          <p className="mt-3 text-sm text-clay">Det gick inte att spara. Försök igen.</p>
+          <p className="mt-3 text-sm text-error">Det gick inte att spara. Försök igen.</p>
         )}
       </Modal>
     </div>

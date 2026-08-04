@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/auth/AuthProvider";
 import { Button, Field, Input } from "@/components/ui";
+import { Logo } from "@/components/Logo";
 
 export default function Login() {
   const { session, loading } = useAuth();
@@ -32,13 +33,16 @@ export default function Login() {
   return (
     <div className="grid min-h-screen place-items-center px-5">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold">Piches</h1>
-        <p className="mt-1 text-sm text-ink/50">Pipeline för UGC-uppdrag</p>
+        <Logo size={56} />
+        <h1 className="mt-5 text-headline-lg text-on-surface">Piches</h1>
+        <p className="mt-2 text-body-lg text-on-surface-variant">
+          Varje uppdrag är en licens med en klocka. Missa aldrig en förnyelse igen.
+        </p>
 
         {sent ? (
-          <div className="mt-8 rounded-2xl border border-line bg-white p-4 text-sm">
-            <p className="font-medium">Kolla mejlen.</p>
-            <p className="mt-1 text-ink/60">
+          <div className="mt-8 rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-5">
+            <p className="text-headline-sm">Kolla mejlen.</p>
+            <p className="mt-2 text-body-md text-on-surface-variant">
               Vi skickade en inloggningslänk till {email}. Länken gäller i en timme.
             </p>
           </div>
@@ -54,7 +58,7 @@ export default function Login() {
                 placeholder="du@exempel.se"
               />
             </Field>
-            {error && <p className="text-sm text-clay">{error}</p>}
+            {error && <p className="text-body-md text-error">{error}</p>}
             <Button type="submit" disabled={busy} className="w-full">
               {busy ? "Skickar..." : "Skicka inloggningslänk"}
             </Button>

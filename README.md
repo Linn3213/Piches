@@ -1,8 +1,30 @@
 # Piches
 
-Röst-först pipeline för UGC-uppdrag: leads, pitchar, uppföljning, statistik.
-Vecka 1 ur scope-dokumentet (`docs/scope-arkitektur-v1.md`) plus statistikvyn
-och uppgiftslistan. Röstdelen (vecka 2) och Stripe-fakturor är inte byggda.
+Affärssystem för UGC-kreatörer, byggt runt en vinkel ingen konkurrent har:
+**varje uppdrag är en licens med en klocka, inte en avklarad uppgift.**
+
+## Vinkeln: rättighetsmotorn
+
+Deelo, Beacons, MySocial och Passionfroot betraktar alla en affär som klar
+när fakturan är betald. Men i UGC säljer du användningsrätt under en
+begränsad tid, och tre saker faller därför mellan stolarna hos dem:
+
+1. **Licensen löper ut.** Varumärket måste sluta annonsera. Det är ditt bästa
+   säljläge på hela året, och ingen app påminner dig. Piches har en
+   utgångsradar med justerbart bevakningsfönster.
+2. **Exklusiviteten krockar.** Du tackar ja till ett hudvårdsuppdrag utan att
+   minnas att ett annat varumärke har branschexklusivitet till i höst.
+   Piches varnar innan du bryter avtalet.
+3. **Materialet återgår.** När licensen gått ut och exklusiviteten släppt är
+   den färdiga videon fri att sälja igen. Ren marginal, ingen ny produktion.
+   Piches listar lagret.
+
+Samma modell driver prissättningen: priset **är** rättigheterna. Prisräknaren
+visar hur stor del som är produktion och hur stor del som är licens, rad för
+rad med en motivering, så att du kan försvara siffran i förhandling.
+
+Logiken ligger i `src/lib/rights.ts` och `src/lib/pricing.ts` som rena
+funktioner, täckta av 29 tester (`npx vitest run`).
 
 ## Backend: det DELADE Supabase-projektet
 
@@ -50,23 +72,43 @@ projektet. Kör den bara om du sätter upp en helt ny miljö.
 - **piches_activities** — logg över statusbyten och pitchar. Underlaget för
   statistikvyn.
 - **piches_tasks** — fristående uppgifter, kopplade eller ej till ett brand.
+- **piches_deliverables** — varje enskild sak som produceras i ett uppdrag.
+- **piches_licenses** — rättigheterna med klocka: kanaler, marknad, start och
+  slut, evig eller ej, branschexklusivitet, råmaterial och licensavgift.
+- **piches_settings** — din prislista. Styr prisförslagen och bevakningsfönstret.
 
 ## Sidor
 
-- **Pipeline** — aktiva varumärken grupperade per status.
-- **Varumärken** — full lista, sök/filter, ny/redigera.
-- **Varumärke → detalj** — brand-info, pitchregistrering, statushistorik.
-- **Uppgifter** — fristående att-göra-lista, valfritt kopplad till ett brand.
-- **Statistik** — pitchar ute (totalt + senaste 30 dagarna), svarsfrekvens,
-  antal vunna, snittordervärde bland vunna, intäkt per månad (senaste 6).
+- **Idag** — prioriterad dagslista ur riktig data. Utgående licenser först,
+  eftersom de kostar mest att missa.
+- **Uppdrag** — pipeline per status, med antal registrerade licenser per kund.
+- **Rättigheter** — utgångsradar, exklusivitetsvakt och lager fritt att sälja igen.
+- **Pris** — förklarande prisräknare byggd på rättighetsmodellen.
+- **Intäkter** — pitchar ute, svarsfrekvens, vunna, snittordervärde, intäkt per
+  månad och rättighetsintäkter per varumärke.
+- **Varumärken / detalj** — lista, sök, filter, pitchregistrering, historik.
+- **Uppgifter** — fristående att-göra-lista.
+- **Inställningar** — prislista och bevakningsfönster.
+
+Formspråket följer Stitch-skisserna: Syne, JetBrains Mono för siffror,
+sagegrönt mot varmt off-white, mjuka radier och Material Symbols.
 
 ## Drift
 
-Deployad på Vercel (`piches.vercel.app`), kopplad till det här repot — pushar
-till `main` deployar automatiskt. Env-variablerna sätts i Vercel under
-Settings → Environment Variables. Notera att Vite bakar in `VITE_`-variabler
-**vid bygget**, inte vid körning: ändrar du dem måste du deploya om för att
-de ska slå igenom.
+Sajten är `piches.essensiadesign.se` på Hostinger. Deploy är **manuell
+filuppladdning** via Hostingers File Manager, aldrig git-auto-deploy — se
+skill `hostinger-deploy` för det exakta flödet.
+
+```
+npm run build
+cd dist && zip -r ../piches-dist.zip . -x ".*" && cd ..
+```
+
+Ladda upp zippen i sajtens webroot, extrahera med overwrite, ta bort zippen.
+
+Notera att Vite bakar in `VITE_`-variabler **vid bygget**, inte vid körning:
+värdena i `.env.local` är de som hamnar i bundlen. Ändrar du dem måste du
+bygga om och ladda upp på nytt.
 
 Saknas variablerna visar appen ett tydligt felmeddelande i stället för en
 blank sida (`src/components/ErrorBoundary.tsx`).
@@ -74,5 +116,5 @@ blank sida (`src/components/ErrorBoundary.tsx`).
 ## Vad som INTE är byggt än (med flit)
 
 Röststyrning (PWA + IndexedDB-kö + Whisper + Haiku-intents), Stripe-fakturor,
-Gmail-outreach, Fortnox-koppling. Se `docs/scope-arkitektur-v1.md` — memot
-rekommenderar att skicka 20 pitchar manuellt innan mer kod skrivs.
+Gmail-outreach, Fortnox-koppling, AI-coach, kontrakt med e-signering och
+marknadsplats. Se `docs/scope-arkitektur-v1.md` för ordningen.

@@ -26,8 +26,8 @@ export class ErrorBoundary extends Component<Props, State> {
       <div className="grid min-h-screen place-items-center px-6">
         <div className="max-w-sm text-center">
           <h1 className="text-lg font-semibold">Något gick fel</h1>
-          <p className="mt-2 text-sm text-ink/60">{this.state.error.message}</p>
-          <p className="mt-4 text-xs text-ink/40">
+          <p className="mt-2 text-sm text-on-surface-variant">{this.state.error.message}</p>
+          <p className="mt-4 text-xs text-on-surface-variant">
             Om detta är en ny driftsättning: kontrollera att VITE_SUPABASE_URL och
             VITE_SUPABASE_PUBLISHABLE_KEY är satta och att sidan är omdeployad
             efter att de lades till.

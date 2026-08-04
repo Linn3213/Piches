@@ -125,3 +125,118 @@ export const TIER_LABEL: Record<1 | 2 | 3, string> = {
   2: "Nivå 2",
   3: "Nivå 3",
 };
+
+// --- Rättighetsmotorn (0002_rights_engine.sql) ----------------------------
+
+export type DeliverableFormat =
+  | "video"
+  | "foto"
+  | "story"
+  | "reel"
+  | "tiktok"
+  | "ugc_ad"
+  | "annat";
+
+export type Channel =
+  | "organic_creator"
+  | "organic_brand"
+  | "paid_social"
+  | "whitelisting"
+  | "website";
+
+export type Territory = "se" | "norden" | "eu" | "global";
+
+export type Deliverable = {
+  id: string;
+  user_id: string;
+  pitch_id: string;
+  brand_id: string;
+  title: string;
+  format: DeliverableFormat;
+  quantity: number;
+  delivered_at: string | null;
+  approved_at: string | null;
+  asset_url: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type License = {
+  id: string;
+  user_id: string;
+  pitch_id: string;
+  brand_id: string;
+  deliverable_id: string | null;
+  channels: Channel[];
+  territory: Territory;
+  starts_on: string;
+  ends_on: string | null;
+  perpetual: boolean;
+  exclusive_category: string | null;
+  exclusivity_ends_on: string | null;
+  includes_raw_files: boolean;
+  fee_sek: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Settings = {
+  user_id: string;
+  base_video_rate: number;
+  base_photo_rate: number;
+  base_story_rate: number;
+  brand_organic_uplift_pct: number;
+  paid_social_uplift_pct: number;
+  whitelisting_uplift_pct: number;
+  website_uplift_pct: number;
+  exclusivity_uplift_pct: number;
+  raw_files_uplift_pct: number;
+  perpetuity_uplift_pct: number;
+  territory_global_uplift_pct: number;
+  rush_fee_pct: number;
+  renewal_lead_days: number;
+  updated_at: string;
+};
+
+export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
+  base_video_rate: 4000,
+  base_photo_rate: 1500,
+  base_story_rate: 1000,
+  brand_organic_uplift_pct: 20,
+  paid_social_uplift_pct: 60,
+  whitelisting_uplift_pct: 40,
+  website_uplift_pct: 15,
+  exclusivity_uplift_pct: 35,
+  raw_files_uplift_pct: 20,
+  perpetuity_uplift_pct: 150,
+  territory_global_uplift_pct: 30,
+  rush_fee_pct: 25,
+  renewal_lead_days: 30,
+};
+
+export const FORMAT_LABEL: Record<DeliverableFormat, string> = {
+  video: "Video",
+  foto: "Foto",
+  story: "Story",
+  reel: "Reel",
+  tiktok: "TikTok",
+  ugc_ad: "UGC-annons",
+  annat: "Annat",
+};
+
+export const CHANNEL_LABEL: Record<Channel, string> = {
+  organic_creator: "Mina egna kanaler",
+  organic_brand: "Varumärkets kanaler",
+  paid_social: "Betald annonsering",
+  whitelisting: "Whitelisting / Spark Ads",
+  website: "Webb och e-handel",
+};
+
+export const TERRITORY_LABEL: Record<Territory, string> = {
+  se: "Sverige",
+  norden: "Norden",
+  eu: "EU",
+  global: "Globalt",
+};

@@ -8,7 +8,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center text-sm text-ink/50">
+      <div className="grid min-h-screen place-items-center text-sm text-on-surface-variant">
         Laddar...
       </div>
     );

@@ -3,11 +3,15 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { Layout } from "@/components/Layout";
 import Login from "@/pages/Login";
-import Pipeline from "@/pages/Pipeline";
+import Dashboard from "@/pages/Dashboard";
+import Deals from "@/pages/Deals";
+import Rights from "@/pages/Rights";
+import Pricing from "@/pages/Pricing";
+import Revenue from "@/pages/Revenue";
 import Brands from "@/pages/Brands";
 import BrandDetail from "@/pages/BrandDetail";
 import Tasks from "@/pages/Tasks";
-import Statistics from "@/pages/Statistics";
+import Settings from "@/pages/Settings";
 
 export default function App() {
   return (
@@ -21,11 +25,15 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Pipeline />} />
+          <Route index element={<Dashboard />} />
+          <Route path="uppdrag" element={<Deals />} />
+          <Route path="rattigheter" element={<Rights />} />
+          <Route path="pris" element={<Pricing />} />
+          <Route path="intakter" element={<Revenue />} />
           <Route path="varumarken" element={<Brands />} />
           <Route path="varumarken/:id" element={<BrandDetail />} />
           <Route path="uppgifter" element={<Tasks />} />
-          <Route path="statistik" element={<Statistics />} />
+          <Route path="installningar" element={<Settings />} />
         </Route>
       </Routes>
     </AuthProvider>

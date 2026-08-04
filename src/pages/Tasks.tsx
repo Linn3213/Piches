@@ -71,7 +71,7 @@ export default function Tasks() {
       </Card>
 
       {isLoading ? (
-        <p className="text-sm text-ink/50">Laddar...</p>
+        <p className="text-sm text-on-surface-variant">Laddar...</p>
       ) : !open.length && !done.length ? (
         <Empty title="Inga uppgifter än" />
       ) : (
@@ -84,14 +84,14 @@ export default function Tasks() {
                     <button
                       onClick={() => toggle.mutate({ id: task.id, done: true })}
                       aria-label="Markera som klar"
-                      className="h-5 w-5 shrink-0 rounded-full border-2 border-line hover:border-clay"
+                      className="h-5 w-5 shrink-0 rounded-full border-2 border-outline-variant hover:border-error"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm">{task.title}</p>
                       {task.brand_id && (
                         <Link
                           to={`/varumarken/${task.brand_id}`}
-                          className="text-xs text-ink/45 hover:text-ink"
+                          className="text-xs text-on-surface-variant hover:text-on-surface"
                         >
                           {brandName(task.brand_id)}
                         </Link>
@@ -101,7 +101,7 @@ export default function Tasks() {
                       <span
                         className={clsx(
                           "shrink-0 text-xs",
-                          new Date(task.due_at) < new Date() ? "text-clay" : "text-ink/45",
+                          new Date(task.due_at) < new Date() ? "text-error" : "text-on-surface-variant",
                         )}
                       >
                         {relativeDays(task.due_at)}
@@ -110,7 +110,7 @@ export default function Tasks() {
                     <button
                       onClick={() => del.mutate(task.id)}
                       aria-label="Ta bort"
-                      className="shrink-0 text-ink/30 hover:text-clay"
+                      className="shrink-0 text-on-surface-variant hover:text-error"
                     >
                       ✕
                     </button>
@@ -122,7 +122,7 @@ export default function Tasks() {
 
           {done.length > 0 && (
             <section className="space-y-2">
-              <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-ink/40">Klara</h2>
+              <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-on-surface-variant">Klara</h2>
               <ul className="space-y-2">
                 {done.map((task) => (
                   <li key={task.id}>
@@ -130,7 +130,7 @@ export default function Tasks() {
                       <button
                         onClick={() => toggle.mutate({ id: task.id, done: false })}
                         aria-label="Ångra"
-                        className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ink text-[10px] text-sand"
+                        className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary text-[10px] text-on-primary"
                       >
                         ✓
                       </button>

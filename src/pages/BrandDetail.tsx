@@ -30,13 +30,13 @@ export default function BrandDetail() {
   const [pitchOpen, setPitchOpen] = useState(false);
 
   if (!id) return <Navigate to="/varumarken" replace />;
-  if (isLoading) return <p className="text-sm text-ink/50">Laddar...</p>;
-  if (error || !brand) return <p className="text-sm text-clay">Hittade inte varumärket.</p>;
+  if (isLoading) return <p className="text-sm text-on-surface-variant">Laddar...</p>;
+  if (error || !brand) return <p className="text-sm text-error">Hittade inte varumärket.</p>;
 
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/varumarken" className="text-sm text-ink/45 hover:text-ink">
+        <Link to="/varumarken" className="text-sm text-on-surface-variant hover:text-on-surface">
           ← Varumärken
         </Link>
       </div>
@@ -46,7 +46,7 @@ export default function BrandDetail() {
           <div>
             <h1 className="text-xl font-semibold">{brand.name}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Badge tone={brand.tier === 1 ? "warm" : "neutral"}>{TIER_LABEL[brand.tier]}</Badge>
+              <Badge tone={brand.tier === 1 ? "primary" : "neutral"}>{TIER_LABEL[brand.tier]}</Badge>
               <StatusPicker
                 value={brand.status}
                 onChange={(status) => updateBrand.mutate({ id: brand.id, patch: { status } })}
@@ -59,7 +59,7 @@ export default function BrandDetail() {
         </div>
 
         {brand.observation && (
-          <p className="mt-4 rounded-xl bg-sand px-3 py-2.5 text-sm text-ink/70">
+          <p className="mt-4 rounded-xl bg-background px-3 py-2.5 text-sm text-on-surface-variant">
             {brand.observation}
           </p>
         )}
@@ -67,31 +67,31 @@ export default function BrandDetail() {
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
           {brand.contact_name && (
             <div>
-              <dt className="text-ink/40">Kontakt</dt>
+              <dt className="text-on-surface-variant">Kontakt</dt>
               <dd>{brand.contact_name}</dd>
             </div>
           )}
           {brand.contact_email && (
             <div>
-              <dt className="text-ink/40">Mejl</dt>
+              <dt className="text-on-surface-variant">Mejl</dt>
               <dd className="truncate">{brand.contact_email}</dd>
             </div>
           )}
           {brand.website && (
             <div>
-              <dt className="text-ink/40">Webbplats</dt>
+              <dt className="text-on-surface-variant">Webbplats</dt>
               <dd className="truncate">{brand.website}</dd>
             </div>
           )}
           {brand.instagram && (
             <div>
-              <dt className="text-ink/40">Instagram</dt>
+              <dt className="text-on-surface-variant">Instagram</dt>
               <dd>{brand.instagram}</dd>
             </div>
           )}
         </dl>
 
-        {brand.notes && <p className="mt-4 whitespace-pre-wrap text-sm text-ink/60">{brand.notes}</p>}
+        {brand.notes && <p className="mt-4 whitespace-pre-wrap text-sm text-on-surface-variant">{brand.notes}</p>}
 
         <button
           onClick={() => {
@@ -99,7 +99,7 @@ export default function BrandDetail() {
               deleteBrand.mutate(brand.id, { onSuccess: () => navigate("/varumarken") });
             }
           }}
-          className="mt-4 text-xs text-clay/70 hover:text-clay"
+          className="mt-4 text-xs text-error hover:text-error"
         >
           Ta bort varumärke
         </button>
@@ -107,7 +107,7 @@ export default function BrandDetail() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink/70">Pitchar</h2>
+          <h2 className="text-sm font-semibold text-on-surface-variant">Pitchar</h2>
           <Button variant="ghost" onClick={() => setPitchOpen(true)}>
             Ny pitch
           </Button>
@@ -125,7 +125,7 @@ export default function BrandDetail() {
                       <p className="text-sm font-medium">
                         {pitch.subject || PITCH_CHANNEL_LABEL[pitch.channel]}
                       </p>
-                      <p className="mt-0.5 text-xs text-ink/45">
+                      <p className="mt-0.5 text-xs text-on-surface-variant">
                         {pitch.sent_at ? formatDate(pitch.sent_at) : "Ej skickad"}
                         {pitch.value_sek ? ` · ${formatMoney(pitch.value_sek)}` : ""}
                       </p>
@@ -155,15 +155,15 @@ export default function BrandDetail() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-ink/70">Historik</h2>
+        <h2 className="text-sm font-semibold text-on-surface-variant">Historik</h2>
         {!activities?.length ? (
-          <p className="text-sm text-ink/40">Inget loggat än.</p>
+          <p className="text-sm text-on-surface-variant">Inget loggat än.</p>
         ) : (
           <ul className="space-y-2 text-sm">
             {activities.map((a) => (
-              <li key={a.id} className="flex justify-between gap-3 text-ink/60">
+              <li key={a.id} className="flex justify-between gap-3 text-on-surface-variant">
                 <span>{a.body}</span>
-                <span className="shrink-0 text-ink/35">{formatDate(a.occurred_at)}</span>
+                <span className="shrink-0 text-on-surface-variant">{formatDate(a.occurred_at)}</span>
               </li>
             ))}
           </ul>
