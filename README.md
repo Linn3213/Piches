@@ -1,61 +1,55 @@
 # Piches
 
 Röst-först pipeline för UGC-uppdrag: leads, pitchar, uppföljning, statistik.
-Vecka 1 ur scope-dokumentet (`docs/scope-arkitektur-v1.md`) — plus statistikvyn
-och uppgiftslistan från vecka 3, eftersom de bara läser appens egen data och
-inte kräver någon extern integration. Röstdelen (vecka 2) och Stripe-fakturor
-(resten av vecka 3) är inte byggda.
+Vecka 1 ur scope-dokumentet (`docs/scope-arkitektur-v1.md`) plus statistikvyn
+och uppgiftslistan. Röstdelen (vecka 2) och Stripe-fakturor är inte byggda.
 
-## Status
+## Backend: det DELADE Supabase-projektet
 
-Kopplad mot ett riktigt Supabase-projekt (`Piches`, region `eu-north-1`,
-org `Linn3213's Org`). Schema, RLS och två säkerhetsfixar från Supabase egen
-advisor är applicerade och verifierade — noll varningar kvar. Bygget är
-verifierat rent (`npm run typecheck`, `npm run build`) och inloggningssidan
-är testad end-to-end i en riktig webbläsare mot det levande projektet.
+Piches ligger i samma Supabase-projekt som Studio L.A, DayliLife, Planexr,
+Contista, Essensia, Learnnd, Clostie och Optionsmorgon — precis som alla
+andra appar. **Inget eget projekt.**
 
-Ett steg gick INTE att verifiera härifrån: sandboxens nätverkspolicy blockerar
-utgående anrop till projektets egna `*.supabase.co`-adress (`403` från
-egress-policyn, bekräftat — inte en kod- eller konfigurationsbugg). Så
-`signInWithOtp`-anropet i sig, alltså att en riktig magic link faktiskt
-skickas och landar i inkorgen, är overifierat från den här miljön. Testa det
-själv med `npm run dev` lokalt eller från den driftsatta sajten — där finns
-ingen sådan spärr.
+| | |
+|---|---|
+| Projekt-ref | `mhswnvzpqekdcdjxxrmm` |
+| URL | `https://mhswnvzpqekdcdjxxrmm.supabase.co` |
+| Tabeller | `piches_brands`, `piches_pitches`, `piches_activities`, `piches_tasks` |
+
+Läs skill `supabase-delad-infra` innan du rör något i backend. Kortversionen
+av reglerna, som den här appen följer:
+
+- **Alla tabeller prefixas `piches_*`.** Ingen delad affärsdata mellan produkter.
+- **Ingen egen `profiles`-tabell och ingen trigger på `auth.users`.** De är
+  globala. En egen trigger där slår mot inloggningen i *alla* appar i projektet.
+- Även hjälpfunktionen heter `piches_touch_updated_at`, så att den inte skriver
+  över en funktion en annan produkt äger.
+- RLS `auth.uid() = user_id` på varenda tabell.
+
+Auth-mejl (magic link) går via projektets befintliga Hostinger-SMTP och
+`auth-email-hook` — därför fungerar utskicken här utan att något nytt behöver
+konfigureras.
 
 ## Kom igång lokalt
 
 ```
 npm install
-cp .env.example .env.local   # fyll i Supabase-URL och publishable key, se nedan
+cp .env.example .env.local   # fyll i värdena för det delade projektet
 npm run dev
 ```
 
-Riktiga uppgifter för det befintliga Piches-projektet:
-
-```
-VITE_SUPABASE_URL=https://gdxmraminmdentuvupzl.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_iAtnMwm07PeSa4o6bArCrQ_OxTL8gXO
-```
-
-(Publishable/anon-nyckeln är säker att ha i klientkod — den är gjord för det.
-RLS är det som faktiskt skyddar datan.) Migrationerna i
-`supabase/migrations/` är redan körda mot det här projektet; kör dem bara om
-du pekar om appen mot ett nytt/tomt projekt.
-
-Inloggning är magic link (Supabase `signInWithOtp`), inget lösenord i v1.
+Migrationen i `supabase/migrations/` är redan applicerad mot det delade
+projektet. Kör den bara om du sätter upp en helt ny miljö.
 
 ## Datamodell
 
-- **brands** — leads/varumärken. `tier` (1–3), `status` i pipelinen
+- **piches_brands** — leads/varumärken. `tier` (1–3), `status` i pipelinen
   (ny → researchad → pitchad → svarat → offert → vunnen/förlorad/vilande).
-- **pitches** — varje utskick mot ett brand, med kanal, belopp och status.
+- **piches_pitches** — varje utskick mot ett brand, med kanal, belopp och status.
   En pitch med status `skickad` flyttar automatiskt sitt brand till `pitchad`.
-- **activities** — logg över statusbyten och pitchar, en per brand. Underlaget
-  för statistikvyn.
-- **tasks** — fristående uppgifter, kopplade eller ej till ett brand.
-
-Allt är scopat på `user_id = auth.uid()` via RLS — byggt för en användare,
-designat för att bära fler utan schemaändring.
+- **piches_activities** — logg över statusbyten och pitchar. Underlaget för
+  statistikvyn.
+- **piches_tasks** — fristående uppgifter, kopplade eller ej till ett brand.
 
 ## Sidor
 
@@ -66,9 +60,19 @@ designat för att bära fler utan schemaändring.
 - **Statistik** — pitchar ute (totalt + senaste 30 dagarna), svarsfrekvens,
   antal vunna, snittordervärde bland vunna, intäkt per månad (senaste 6).
 
+## Drift
+
+Deployad på Vercel (`piches.vercel.app`), kopplad till det här repot — pushar
+till `main` deployar automatiskt. Env-variablerna sätts i Vercel under
+Settings → Environment Variables. Notera att Vite bakar in `VITE_`-variabler
+**vid bygget**, inte vid körning: ändrar du dem måste du deploya om för att
+de ska slå igenom.
+
+Saknas variablerna visar appen ett tydligt felmeddelande i stället för en
+blank sida (`src/components/ErrorBoundary.tsx`).
+
 ## Vad som INTE är byggt än (med flit)
 
 Röststyrning (PWA + IndexedDB-kö + Whisper + Haiku-intents), Stripe-fakturor,
-Gmail-outreach, Fortnox-koppling. Se `docs/scope-arkitektur-v1.md` för
-ordningen — memot rekommenderar att skicka 20 pitchar manuellt innan mer kod
-skrivs.
+Gmail-outreach, Fortnox-koppling. Se `docs/scope-arkitektur-v1.md` — memot
+rekommenderar att skicka 20 pitchar manuellt innan mer kod skrivs.

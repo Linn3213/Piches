@@ -25,7 +25,7 @@ export function useStats() {
     queryKey: ["stats"],
     queryFn: async (): Promise<Stats> => {
       const { data, error } = await supabase
-        .from("pitches")
+        .from("piches_pitches")
         .select("status, sent_at, value_sek")
         .not("sent_at", "is", null);
       if (error) throw error;

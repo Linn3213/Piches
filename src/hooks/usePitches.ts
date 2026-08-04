@@ -17,7 +17,7 @@ export function usePitches(brandId?: string) {
   return useQuery({
     queryKey: ["pitches", brandId ?? "alla"],
     queryFn: async (): Promise<Pitch[]> => {
-      let q = supabase.from("pitches").select("*").order("created_at", { ascending: false });
+      let q = supabase.from("piches_pitches").select("*").order("created_at", { ascending: false });
       if (brandId) q = q.eq("brand_id", brandId);
       const { data, error } = await q;
       if (error) throw error;
@@ -30,11 +30,11 @@ export function useCreatePitch() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (draft: PitchDraft): Promise<Pitch> => {
-      const { data, error } = await supabase.from("pitches").insert(draft).select().single();
+      const { data, error } = await supabase.from("piches_pitches").insert(draft).select().single();
       if (error) throw error;
       const pitch = data as Pitch;
 
-      await supabase.from("activities").insert({
+      await supabase.from("piches_activities").insert({
         brand_id: pitch.brand_id,
         pitch_id: pitch.id,
         kind: "pitch",
@@ -43,7 +43,7 @@ export function useCreatePitch() {
 
       // En skickad pitch flyttar automatiskt varumarket framat i pipelinen.
       if (pitch.status === "skickad") {
-        await supabase.from("brands").update({ status: "pitchad" }).eq("id", pitch.brand_id);
+        await supabase.from("piches_brands").update({ status: "pitchad" }).eq("id", pitch.brand_id);
       }
 
       return pitch;
@@ -61,7 +61,7 @@ export function useUpdatePitch() {
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<PitchDraft> }): Promise<Pitch> => {
       const { data, error } = await supabase
-        .from("pitches")
+        .from("piches_pitches")
         .update(patch)
         .eq("id", id)
         .select()

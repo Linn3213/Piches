@@ -8,7 +8,7 @@ export function useActivities(brandId: string | undefined) {
     enabled: Boolean(brandId),
     queryFn: async (): Promise<Activity[]> => {
       const { data, error } = await supabase
-        .from("activities")
+        .from("piches_activities")
         .select("*")
         .eq("brand_id", brandId!)
         .order("occurred_at", { ascending: false })

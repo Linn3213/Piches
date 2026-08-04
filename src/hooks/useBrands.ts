@@ -21,7 +21,7 @@ export function useBrands() {
     queryKey: ["brands"],
     queryFn: async (): Promise<Brand[]> => {
       const { data, error } = await supabase
-        .from("brands")
+        .from("piches_brands")
         .select("*")
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -35,7 +35,7 @@ export function useBrand(id: string | undefined) {
     queryKey: ["brands", id],
     enabled: Boolean(id),
     queryFn: async (): Promise<Brand> => {
-      const { data, error } = await supabase.from("brands").select("*").eq("id", id!).single();
+      const { data, error } = await supabase.from("piches_brands").select("*").eq("id", id!).single();
       if (error) throw error;
       return data as Brand;
     },
@@ -46,10 +46,10 @@ export function useCreateBrand() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (draft: BrandDraft): Promise<Brand> => {
-      const { data, error } = await supabase.from("brands").insert(draft).select().single();
+      const { data, error } = await supabase.from("piches_brands").insert(draft).select().single();
       if (error) throw error;
 
-      await supabase.from("activities").insert({
+      await supabase.from("piches_activities").insert({
         brand_id: (data as Brand).id,
         kind: "system",
         body: `Lade till ${draft.name} som lead`,
@@ -69,7 +69,7 @@ export function useUpdateBrand() {
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<BrandDraft> }): Promise<Brand> => {
       const { data, error } = await supabase
-        .from("brands")
+        .from("piches_brands")
         .update(patch)
         .eq("id", id)
         .select()
@@ -78,7 +78,7 @@ export function useUpdateBrand() {
 
       // Statusbyten loggas, resten inte. Statistiken i vecka 3 laser loggen.
       if (patch.status) {
-        await supabase.from("activities").insert({
+        await supabase.from("piches_activities").insert({
           brand_id: id,
           kind: "status",
           body: `Status: ${patch.status}`,
@@ -99,7 +99,7 @@ export function useDeleteBrand() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("brands").delete().eq("id", id);
+      const { error } = await supabase.from("piches_brands").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["brands"] }),
