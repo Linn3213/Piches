@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { Channel, License, Territory } from "@/types/db";
@@ -59,7 +60,28 @@ export function useCreateLicense() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["licenses"] });
+      qc.invalidateQueries({ queryKey: ["expiry-radar"] });
       qc.invalidateQueries({ queryKey: ["activities"] });
+    },
+  });
+}
+
+export function useUpdateLicense() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<LicenseDraft> }) => {
+      const { data, error } = await supabase
+        .from("piches_licenses")
+        .update(patch)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as License;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["licenses"] });
+      qc.invalidateQueries({ queryKey: ["expiry-radar"] });
     },
   });
 }
@@ -71,7 +93,10 @@ export function useDeleteLicense() {
       const { error } = await supabase.from("piches_licenses").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["licenses"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["licenses"] });
+      qc.invalidateQueries({ queryKey: ["expiry-radar"] });
+    },
   });
 }
 
@@ -121,7 +146,9 @@ export function useExclusivityGuard(
   excludeBrandId?: string,
 ): ExclusivityConflict[] {
   const { data: licenses } = useLicenses();
-  if (!licenses || !category.trim()) return [];
-  const start = startingOn ? new Date(startingOn) : new Date();
-  return exclusivityConflicts(licenses, category, start, excludeBrandId);
+  return useMemo(() => {
+    if (!licenses || !category.trim()) return [];
+    const start = startingOn ? new Date(startingOn) : new Date();
+    return exclusivityConflicts(licenses, category, start, excludeBrandId);
+  }, [licenses, category, startingOn, excludeBrandId]);
 }

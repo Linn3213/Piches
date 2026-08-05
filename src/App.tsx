@@ -5,6 +5,7 @@ import { Layout } from "@/components/Layout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Deals from "@/pages/Deals";
+import DealDetail from "@/pages/DealDetail";
 import Rights from "@/pages/Rights";
 import Pricing from "@/pages/Pricing";
 import Revenue from "@/pages/Revenue";
@@ -27,6 +28,7 @@ export default function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="uppdrag" element={<Deals />} />
+          <Route path="uppdrag/:id" element={<DealDetail />} />
           <Route path="rattigheter" element={<Rights />} />
           <Route path="pris" element={<Pricing />} />
           <Route path="intakter" element={<Revenue />} />

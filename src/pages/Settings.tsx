@@ -83,20 +83,39 @@ export default function Settings() {
       </Card>
 
       <Card className="space-y-5">
-        <h2 className="text-headline-sm">Bevakning</h2>
-        <Field
-          label="Varna så här många dagar innan en licens går ut"
-          hint="Styr utgångsradarn och notisbrickan."
-        >
-          <Input
-            type="number"
-            min={1}
-            max={365}
-            className="sm:w-48"
-            value={num("renewal_lead_days")}
-            onChange={(e) => set("renewal_lead_days", Number(e.target.value))}
-          />
-        </Field>
+        <div>
+          <h2 className="text-headline-sm">Bevakning och förnyelse</h2>
+          <p className="mt-1 text-body-md text-on-surface-variant">
+            Styr när en licens dyker upp på radarn, och vad appen föreslår att du tar för att
+            förlänga den.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Varna så här många dagar innan en licens går ut"
+            hint="Styr utgångsradarn och notisbrickan."
+          >
+            <Input
+              type="number"
+              min={1}
+              max={365}
+              value={num("renewal_lead_days")}
+              onChange={(e) => set("renewal_lead_days", Number(e.target.value))}
+            />
+          </Field>
+          <Field
+            label="Påslag på förnyelser, %"
+            hint="Materialet är beprövat vid det laget, så förlängningen är sällan värd mindre än originalet."
+          >
+            <Input
+              type="number"
+              min={0}
+              max={500}
+              value={num("renewal_uplift_pct")}
+              onChange={(e) => set("renewal_uplift_pct", Number(e.target.value))}
+            />
+          </Field>
+        </div>
       </Card>
 
       <div className="flex items-center gap-3">

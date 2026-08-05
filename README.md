@@ -23,8 +23,14 @@ Samma modell driver prissättningen: priset **är** rättigheterna. Prisräknare
 visar hur stor del som är produktion och hur stor del som är licens, rad för
 rad med en motivering, så att du kan försvara siffran i förhandling.
 
-Logiken ligger i `src/lib/rights.ts` och `src/lib/pricing.ts` som rena
-funktioner, täckta av 29 tester (`npx vitest run`).
+Logiken ligger i `src/lib/rights.ts`, `src/lib/pricing.ts`,
+`src/lib/economy.ts` och `src/lib/renewal.ts` som rena funktioner, täckta av 63
+tester (`npx vitest run`).
+
+Utöver rättigheterna räknar `economy.ts` det som annars aldrig blir uträknat:
+vad varje affär gav per nedlagd timme, vad som är fakturerat men obetalt, hur
+länge kunderna faktiskt dröjer, och hur stor del av omsättningen som hänger på
+en enda kund.
 
 ## Backend: det DELADE Supabase-projektet
 
@@ -36,7 +42,7 @@ andra appar. **Inget eget projekt.**
 |---|---|
 | Projekt-ref | `mhswnvzpqekdcdjxxrmm` |
 | URL | `https://mhswnvzpqekdcdjxxrmm.supabase.co` |
-| Tabeller | `piches_brands`, `piches_pitches`, `piches_activities`, `piches_tasks` |
+| Tabeller | `piches_brands`, `piches_pitches`, `piches_activities`, `piches_tasks`, `piches_deliverables`, `piches_licenses`, `piches_settings` |
 
 Läs skill `supabase-delad-infra` innan du rör något i backend. Kortversionen
 av reglerna, som den här appen följer:
@@ -65,30 +71,60 @@ projektet. Kör den bara om du sätter upp en helt ny miljö.
 
 ## Datamodell
 
-- **piches_brands** — leads/varumärken. `tier` (1–3), `status` i pipelinen
-  (ny → researchad → pitchad → svarat → offert → vunnen/förlorad/vilande).
-- **piches_pitches** — varje utskick mot ett brand, med kanal, belopp och status.
-  En pitch med status `skickad` flyttar automatiskt sitt brand till `pitchad`.
-- **piches_activities** — logg över statusbyten och pitchar. Underlaget för
-  statistikvyn.
-- **piches_tasks** — fristående uppgifter, kopplade eller ej till ett brand.
-- **piches_deliverables** — varje enskild sak som produceras i ett uppdrag.
+- **piches_brands** — kunder och leads. `tier` (1 till 3) plus en status som
+  speglar den affär som kommit längst, så att en återkommande kund aldrig
+  hoppar tillbaka till att se ut som ett kallt lead.
+- **piches_pitches** — **affären**, inte bara utskicket. Den föds som ett utkast
+  och lever hela vägen: utkast → skickad → svarat → offert → vunnen →
+  produktion → levererat → fakturerat → betalt. Här ligger även fakturanummer,
+  förfallodag, inköpta kostnader, nedlagd tid, revisionsrundor och kopplingen
+  bakåt till licensen en förnyelse föddes ur.
+- **piches_activities** — logg över statusbyten och pitchar.
+- **piches_tasks** — fristående uppgifter, kopplade eller ej till ett varumärke.
+- **piches_deliverables** — varje enskild sak som produceras, med hook och manus.
 - **piches_licenses** — rättigheterna med klocka: kanaler, marknad, start och
   slut, evig eller ej, branschexklusivitet, råmaterial och licensavgift.
-- **piches_settings** — din prislista. Styr prisförslagen och bevakningsfönstret.
+- **piches_settings** — din prislista, bevakningsfönstret och förnyelsepåslaget.
+
+Datumen för vunnet, fakturerat och betalt stämplas av en databastrigger vid
+statusbyte. Statusen ändras från flera ställen i appen, och läggs stämplingen i
+gränssnittet hamnar den förr eller senare fel på ett av dem. Då ljuger både
+utgångsradarn och intäktsstatistiken.
+
+## Affärsloopen
+
+Poängen med hela modellen är att loopen sluter sig:
+
+```
+pitch → vunnen → leverabler → levererat → licensen börjar ticka
+                                              ↓
+   ny affär ← förnyelseförslag ← utgångsradarn ← fakturerat → betalt
+```
+
+Leveransen är det som startar klockan. När klockan närmar sig noll blir
+licensen ett färdigt affärsförslag med pris och text, och det förslaget blir en
+ny affär som pekar tillbaka på licensen den kom ur. Det är den delen ingen
+konkurrent har, eftersom de alla betraktar affären som klar när fakturan är
+betald.
 
 ## Sidor
 
-- **Idag** — prioriterad dagslista ur riktig data. Utgående licenser först,
-  eftersom de kostar mest att missa.
-- **Uppdrag** — pipeline per status, med antal registrerade licenser per kund.
-- **Rättigheter** — utgångsradar, exklusivitetsvakt och lager fritt att sälja igen.
+- **Idag** — prioriterad dagslista ur riktig data, sorterad efter hur dyrt det
+  är att missa saken: sena fakturor först, sedan licenser på väg ut, sedan
+  levererat material som saknar registrerade rättigheter.
+- **Uppdrag** — kanban över affärer, inte över varumärken, så att en förnyelse
+  och ett nytt uppdrag mot samma kund kan ligga på brädet samtidigt. Avslutade
+  affärer lämnar brädet men går att fälla ut.
+- **Uppdrag / detalj** — arbetsytan: leverabler, rättigheter, faktura, kostnader
+  och tid, med vinst och timpenning uträknade.
+- **Rättigheter** — förnyelsekön, utgångsradar, exklusivitetsvakt och lager
+  fritt att sälja igen.
 - **Pris** — förklarande prisräknare byggd på rättighetsmodellen.
-- **Intäkter** — pitchar ute, svarsfrekvens, vunna, snittordervärde, intäkt per
-  månad och rättighetsintäkter per varumärke.
+- **Intäkter** — pengaflödet (vunnet, utestående, förfallet, inbetalt), sena
+  betalningar, koncentrationsrisk, lönsamhet per kund och rättighetsintäkter.
 - **Varumärken / detalj** — lista, sök, filter, pitchregistrering, historik.
 - **Uppgifter** — fristående att-göra-lista.
-- **Inställningar** — prislista och bevakningsfönster.
+- **Inställningar** — prislista, bevakningsfönster och förnyelsepåslag.
 
 Formspråket följer Stitch-skisserna: Syne, JetBrains Mono för siffror,
 sagegrönt mot varmt off-white, mjuka radier och Material Symbols.
@@ -118,3 +154,8 @@ blank sida (`src/components/ErrorBoundary.tsx`).
 Röststyrning (PWA + IndexedDB-kö + Whisper + Haiku-intents), Stripe-fakturor,
 Gmail-outreach, Fortnox-koppling, AI-coach, kontrakt med e-signering och
 marknadsplats. Se `docs/scope-arkitektur-v1.md` för ordningen.
+
+Fakturan skapas alltså fortfarande i bokföringsprogrammet. Appen sparar bara
+numret och datumen, eftersom bokföringslagens sjuårskrav och ansvaret för
+arkivet ligger hos den bokföringsskyldiga och inte hos en plattform. Det är ett
+medvetet vägval, inte en lucka.

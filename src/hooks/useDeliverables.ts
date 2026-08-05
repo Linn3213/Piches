@@ -8,6 +8,8 @@ export type DeliverableDraft = {
   title: string;
   format: DeliverableFormat;
   quantity: number;
+  hook?: string | null;
+  script?: string | null;
   asset_url?: string | null;
   notes?: string | null;
 };
@@ -40,7 +42,10 @@ export function useCreateDeliverable() {
       if (error) throw error;
       return data as Deliverable;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["deliverables"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["deliverables"] });
+      qc.invalidateQueries({ queryKey: ["expiry-radar"] });
+    },
   });
 }
 
@@ -57,7 +62,10 @@ export function useUpdateDeliverable() {
       if (error) throw error;
       return data as Deliverable;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["deliverables"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["deliverables"] });
+      qc.invalidateQueries({ queryKey: ["expiry-radar"] });
+    },
   });
 }
 

@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useBrands } from "@/hooks/useBrands";
 import { useDeliverables } from "@/hooks/useDeliverables";
 import { useExpiryRadar, useLicenses } from "@/hooks/useLicenses";
+import { useRenewalQueue, useStartRenewal } from "@/hooks/useRenewals";
 import { useSettings } from "@/hooks/useSettings";
 import { CHANNEL_LABEL, TERRITORY_LABEL, type License } from "@/types/db";
 import { daysUntilExpiry, exclusivityConflicts, parseDate } from "@/lib/rights";
-import { formatDate, formatMoney } from "@/lib/format";
-import { Badge, Card, Empty, Icon, Input, Loading, PageHeader, Stat } from "@/components/ui";
+import type { RenewalProposal } from "@/lib/renewal";
+import { days, formatDateFull, formatMoney } from "@/lib/format";
+import { Badge, Button, Card, Empty, Icon, Input, Loading, PageHeader, Stat } from "@/components/ui";
 
 /**
  * Rättighetsvyn. Det här är det ingen annan creator-app gör: den behandlar
@@ -19,6 +21,9 @@ export default function Rights() {
   const { data: brands } = useBrands();
   const { data: deliverables } = useDeliverables();
   const { data: settings } = useSettings();
+  const renewals = useRenewalQueue();
+  const startRenewal = useStartRenewal();
+  const navigate = useNavigate();
   const [checkCategory, setCheckCategory] = useState("");
 
   const brandName = (id: string) => brands?.find((b) => b.id === id)?.name ?? "Okänt varumärke";
@@ -58,7 +63,7 @@ export default function Rights() {
             <Stat
               label="Går ut snart"
               value={String(radar.expiring.length)}
-              sub={`inom ${radar.leadDays} dagar`}
+              sub={`inom ${days(radar.leadDays)}`}
               icon="alarm"
               tone={radar.expiring.length > 0 ? "danger" : undefined}
             />
@@ -83,16 +88,48 @@ export default function Rights() {
             />
           </div>
 
+          {/* Förnyelsemotorn */}
+          <section className="space-y-4">
+            <SectionTitle
+              icon="autorenew"
+              title="Att förnya"
+              hint="Kunden har materialet i drift och vet vad det gav. Det är enda gången på året du säljer till någon som redan känner till svaret."
+            />
+            {renewals.length === 0 ? (
+              <Card className="text-body-md text-on-surface-variant">
+                Ingenting väntar på förnyelse just nu. Licenser dyker upp här{" "}
+                {days(radar.leadDays)} innan de går ut.
+              </Card>
+            ) : (
+              <ul className="space-y-3">
+                {renewals.map((proposal) => (
+                  <li key={proposal.license.id}>
+                    <RenewalCard
+                      proposal={proposal}
+                      asset={deliverableTitle(proposal.license.deliverable_id)}
+                      busy={startRenewal.isPending}
+                      onStart={() =>
+                        startRenewal.mutate(proposal, {
+                          onSuccess: (pitch) => navigate(`/uppdrag/${pitch.id}`),
+                        })
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
           {/* Utgångsradarn */}
           <section className="space-y-4">
             <SectionTitle
               icon="alarm"
               title="Går ut snart"
-              hint="Ditt bästa säljläge. Hör av dig innan de tvingas ta ner annonsen."
+              hint="Klockan på varje licens, närmast utgång först."
             />
             {radar.expiring.length === 0 ? (
               <Card className="text-body-md text-on-surface-variant">
-                Inget går ut inom {radar.leadDays} dagar.
+                Inget går ut inom {days(radar.leadDays)}.
               </Card>
             ) : (
               <ul className="space-y-3">
@@ -146,8 +183,8 @@ export default function Rights() {
                           Bunden till {brandName(c.license.brand_id)}
                         </p>
                         <p className="mt-0.5 text-body-md">
-                          Exklusivitet inom {c.category} till {formatDate(c.endsOn)} — {c.daysLeft}{" "}
-                          dagar kvar. Att tacka ja nu bryter avtalet.
+                          Exklusivitet inom {c.category} till {formatDateFull(c.endsOn)}, alltså{" "}
+                          {days(c.daysLeft)} till. Att tacka ja nu bryter avtalet.
                         </p>
                       </div>
                     </div>
@@ -172,7 +209,7 @@ export default function Rights() {
                       <p className="text-headline-sm">{deliverableTitle(deliverableId)}</p>
                       <p className="mt-1 text-body-md text-on-surface-variant">
                         Såld till {brandName(ls[0].brand_id)}, licensen slut{" "}
-                        {ls[0].ends_on ? formatDate(ls[0].ends_on) : ""}
+                        {ls[0].ends_on ? formatDateFull(ls[0].ends_on) : ""}
                       </p>
                     </div>
                     <Badge tone="primary">Fri</Badge>
@@ -218,6 +255,66 @@ export default function Rights() {
   );
 }
 
+/**
+ * Kortet som gör om en tickande klocka till en affär. Texten är färdig att
+ * skicka, priset är förra avgiften plus påslaget, och kopplingen bakåt till
+ * licensen följer med in i pipelinen.
+ */
+function RenewalCard({
+  proposal,
+  asset,
+  busy,
+  onStart,
+}: {
+  proposal: RenewalProposal;
+  asset: string;
+  busy: boolean;
+  onStart: () => void;
+}) {
+  return (
+    <Card className={proposal.lapsed ? "" : "border-l-2 border-l-primary"}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-headline-sm text-on-surface">{proposal.brandName}</p>
+            {proposal.lapsed ? (
+              <Badge tone="neutral">Redan utgången</Badge>
+            ) : (
+              <Badge tone="danger">
+                <Icon name="schedule" size={13} />
+                {days(proposal.daysLeft ?? 0)} kvar
+              </Badge>
+            )}
+          </div>
+          <p className="mt-1 truncate text-body-md text-on-surface-variant">{asset}</p>
+          <p className="mt-3 max-w-prose text-body-md text-on-surface-variant">
+            {proposal.observation}
+          </p>
+        </div>
+
+        <div className="shrink-0 space-y-2 sm:text-right">
+          {proposal.suggestedFee !== null && (
+            <div>
+              <p className="text-label-caps uppercase text-on-surface-variant">Föreslå</p>
+              <p className="font-mono text-2xl text-on-surface">
+                {formatMoney(proposal.suggestedFee)}
+              </p>
+              {proposal.previousFee !== null && (
+                <p className="font-mono text-[11px] text-on-surface-variant/70">
+                  förra gången {formatMoney(proposal.previousFee)}
+                </p>
+              )}
+            </div>
+          )}
+          <Button disabled={busy} onClick={onStart}>
+            {busy ? "Skapar..." : "Skapa förnyelsen"}
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function SectionTitle({ icon, title, hint }: { icon: string; title: string; hint: string }) {
   return (
     <div className="flex items-start gap-3">
@@ -243,7 +340,7 @@ function LicenseRow({
   asset: string;
   urgent?: boolean;
 }) {
-  const days = daysUntilExpiry(license, new Date());
+  const daysLeft = daysUntilExpiry(license, new Date());
   return (
     <li>
       <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -266,14 +363,14 @@ function LicenseRow({
         </div>
 
         <div className="shrink-0 text-left sm:text-right">
-          {days === null ? (
+          {daysLeft === null ? (
             <Badge tone="info">Evig</Badge>
-          ) : days < 0 ? (
-            <Badge tone="neutral">Utgick {formatDate(license.ends_on)}</Badge>
+          ) : daysLeft < 0 ? (
+            <Badge tone="neutral">Utgick {formatDateFull(license.ends_on)}</Badge>
           ) : (
             <Badge tone={urgent ? "danger" : "neutral"}>
               <Icon name="schedule" size={13} />
-              {days} dagar kvar
+              {days(daysLeft)} kvar
             </Badge>
           )}
           {license.fee_sek !== null && (
@@ -281,7 +378,7 @@ function LicenseRow({
               {formatMoney(license.fee_sek)}
             </p>
           )}
-          {license.ends_on && days !== null && days >= 0 && (
+          {license.ends_on && daysLeft !== null && daysLeft >= 0 && (
             <p className="mt-1 font-mono text-[11px] text-on-surface-variant/70">
               t.o.m. {parseDate(license.ends_on).toLocaleDateString("sv-SE")}
             </p>

@@ -11,12 +11,22 @@ export type BrandStatus =
   | "forlorad"
   | "vilande";
 
+/**
+ * Affärens livscykel. Pitchen ÄR affären: den föds som ett utkast och lever
+ * hela vägen till betald och förnyad. Stegen efter "vunnen" är det som gör
+ * att rättighetsmotorn får data, eftersom det är leveransen som startar
+ * licensklockan.
+ */
 export type PitchStatus =
   | "utkast"
   | "skickad"
   | "svarat"
   | "offert"
   | "vunnen"
+  | "produktion"
+  | "levererat"
+  | "fakturerat"
+  | "betalt"
   | "forlorad"
   | "ingen_respons";
 
@@ -51,11 +61,26 @@ export type Pitch = {
   subject: string | null;
   body: string | null;
   observation: string | null;
+  /** Ordervärde exklusive moms. */
   value_sek: number | null;
   sent_at: string | null;
   replied_at: string | null;
   follow_up_1_at: string | null;
   follow_up_2_at: string | null;
+  // Affären efter vunnen (0003_deal_lifecycle.sql). Datumen stämplas av en
+  // databastrigger vid statusbyte, så de kan inte glömmas bort i UI:t.
+  won_at: string | null;
+  invoice_number: string | null;
+  invoiced_on: string | null;
+  due_on: string | null;
+  paid_on: string | null;
+  /** Vad affären kostade dig i pengar: köpta tjänster, resor, rekvisita. */
+  production_cost_sek: number | null;
+  /** Din egen nedlagda tid. Utan den går timpenningen inte att räkna. */
+  hours_spent: number | null;
+  revision_rounds: number;
+  /** Föddes den här affären ur en licens som löpte ut? */
+  renewed_from_license_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -109,8 +134,65 @@ export const PITCH_STATUS_LABEL: Record<PitchStatus, string> = {
   svarat: "Svarat",
   offert: "Offert ute",
   vunnen: "Vunnen",
+  produktion: "Produktion",
+  levererat: "Levererat",
+  fakturerat: "Fakturerat",
+  betalt: "Betalt",
   forlorad: "Förlorad",
   ingen_respons: "Ingen respons",
+};
+
+/** Kanbanens kolumner, i den ordning affären faktiskt rör sig. */
+export const DEAL_PIPELINE: PitchStatus[] = [
+  "utkast",
+  "skickad",
+  "svarat",
+  "offert",
+  "vunnen",
+  "produktion",
+  "levererat",
+  "fakturerat",
+  "betalt",
+];
+
+/** Affären lever och kan fortfarande bli pengar. */
+export const OPEN_STATUSES: PitchStatus[] = [
+  "utkast",
+  "skickad",
+  "svarat",
+  "offert",
+  "vunnen",
+  "produktion",
+  "levererat",
+  "fakturerat",
+];
+
+/** Affären är avslutad, oavsett hur den slutade. */
+export const CLOSED_STATUSES: PitchStatus[] = ["betalt", "forlorad", "ingen_respons"];
+
+/** Affären är vunnen, alltså intäkt (kontrakterad, om än inte betald än). */
+export const WON_STATUSES: PitchStatus[] = [
+  "vunnen",
+  "produktion",
+  "levererat",
+  "fakturerat",
+  "betalt",
+];
+
+/** Motparten har hört av sig. Underlaget för svarsfrekvensen. */
+export const RESPONDED_STATUSES: PitchStatus[] = [
+  "svarat",
+  "offert",
+  "forlorad",
+  ...WON_STATUSES,
+];
+
+export const STATUS_HINT: Partial<Record<PitchStatus, string>> = {
+  vunnen: "Lägg upp leverablerna och registrera rättigheterna.",
+  produktion: "Materialet spelas in och klipps.",
+  levererat: "Levererat till kund. Nu tickar licensklockan.",
+  fakturerat: "Fakturan är skickad, pengarna har inte kommit än.",
+  betalt: "Klar. Licensen bevakas tills den går ut.",
 };
 
 export const PITCH_CHANNEL_LABEL: Record<PitchChannel, string> = {
@@ -157,6 +239,9 @@ export type Deliverable = {
   delivered_at: string | null;
   approved_at: string | null;
   asset_url: string | null;
+  /** Första sekunden. I UGC är hooken inte en anteckning, den är produkten. */
+  hook: string | null;
+  script: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -197,6 +282,8 @@ export type Settings = {
   territory_global_uplift_pct: number;
   rush_fee_pct: number;
   renewal_lead_days: number;
+  /** Påslag på förnyelser, eftersom materialet då är beprövat. */
+  renewal_uplift_pct: number;
   updated_at: string;
 };
 
@@ -214,6 +301,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   territory_global_uplift_pct: 30,
   rush_fee_pct: 25,
   renewal_lead_days: 30,
+  renewal_uplift_pct: 15,
 };
 
 export const FORMAT_LABEL: Record<DeliverableFormat, string> = {

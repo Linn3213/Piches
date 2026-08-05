@@ -87,7 +87,7 @@ export function computePrice(input: PricingInput, s: Settings): PricingResult {
       kind: "rights",
       label: "Varumärkets egna kanaler",
       amount: pct(s.brand_organic_uplift_pct),
-      detail: `+${s.brand_organic_uplift_pct}% — de får publicera i egna flöden`,
+      detail: `+${s.brand_organic_uplift_pct}%, de får publicera i egna flöden`,
     });
   }
 
@@ -101,7 +101,7 @@ export function computePrice(input: PricingInput, s: Settings): PricingResult {
       amount,
       detail:
         months === null
-          ? `+${s.paid_social_uplift_pct}% — annonsrätt`
+          ? `+${s.paid_social_uplift_pct}% för annonsrätt`
           : `+${s.paid_social_uplift_pct}% × ${factor.toFixed(1)} för ${months} mån`,
     });
   }
@@ -111,7 +111,7 @@ export function computePrice(input: PricingInput, s: Settings): PricingResult {
       kind: "rights",
       label: "Whitelisting / Spark Ads",
       amount: pct(s.whitelisting_uplift_pct),
-      detail: `+${s.whitelisting_uplift_pct}% — annonsen går från ditt konto`,
+      detail: `+${s.whitelisting_uplift_pct}%, annonsen går från ditt konto`,
     });
   }
 
@@ -120,7 +120,7 @@ export function computePrice(input: PricingInput, s: Settings): PricingResult {
       kind: "rights",
       label: "Webb och e-handel",
       amount: pct(s.website_uplift_pct),
-      detail: `+${s.website_uplift_pct}% — produktsidor, nyhetsbrev`,
+      detail: `+${s.website_uplift_pct}% för produktsidor och nyhetsbrev`,
     });
   }
 
@@ -129,7 +129,7 @@ export function computePrice(input: PricingInput, s: Settings): PricingResult {
       kind: "rights",
       label: "Global användning",
       amount: pct(s.territory_global_uplift_pct),
-      detail: `+${s.territory_global_uplift_pct}% — utanför Norden och EU`,
+      detail: `+${s.territory_global_uplift_pct}% för användning utanför Norden och EU`,
     });
   }
 
@@ -138,7 +138,7 @@ export function computePrice(input: PricingInput, s: Settings): PricingResult {
       kind: "rights",
       label: "Evig licens",
       amount: pct(s.perpetuity_uplift_pct),
-      detail: `+${s.perpetuity_uplift_pct}% — du kan aldrig sälja om materialet`,
+      detail: `+${s.perpetuity_uplift_pct}%, du kan aldrig sälja materialet igen`,
     });
   }
 
@@ -147,7 +147,7 @@ export function computePrice(input: PricingInput, s: Settings): PricingResult {
       kind: "rights",
       label: "Branschexklusivitet",
       amount: pct(s.exclusivity_uplift_pct),
-      detail: `+${s.exclusivity_uplift_pct}% — du tackar nej till konkurrenter`,
+      detail: `+${s.exclusivity_uplift_pct}%, du tackar nej till konkurrenter`,
     });
   }
 
@@ -156,7 +156,7 @@ export function computePrice(input: PricingInput, s: Settings): PricingResult {
       kind: "extra",
       label: "Råmaterial",
       amount: pct(s.raw_files_uplift_pct),
-      detail: `+${s.raw_files_uplift_pct}% — de får klippa om själva`,
+      detail: `+${s.raw_files_uplift_pct}%, de får klippa om själva`,
     });
   }
 
@@ -165,7 +165,7 @@ export function computePrice(input: PricingInput, s: Settings): PricingResult {
       kind: "extra",
       label: "Expressleverans",
       amount: pct(s.rush_fee_pct),
-      detail: `+${s.rush_fee_pct}% — kortare produktionstid`,
+      detail: `+${s.rush_fee_pct}% för kortare produktionstid`,
     });
   }
 

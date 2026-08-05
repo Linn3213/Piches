@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { Pitch, PitchChannel, PitchStatus } from "@/types/db";
+import { PITCH_STATUS_LABEL, WON_STATUSES } from "@/types/db";
 
 export type PitchDraft = {
   brand_id: string;
@@ -11,6 +12,16 @@ export type PitchDraft = {
   body?: string | null;
   value_sek?: number | null;
   sent_at?: string | null;
+  // Affären efter vunnen. Datumen stämplas av databasen vid statusbyte,
+  // men går att skriva över här när något registreras i efterhand.
+  invoice_number?: string | null;
+  invoiced_on?: string | null;
+  due_on?: string | null;
+  paid_on?: string | null;
+  production_cost_sek?: number | null;
+  hours_spent?: number | null;
+  revision_rounds?: number;
+  renewed_from_license_id?: string | null;
 };
 
 export function usePitches(brandId?: string) {
@@ -26,6 +37,44 @@ export function usePitches(brandId?: string) {
   });
 }
 
+/** En enskild affär, för arbetsytan där den faktiskt utförs. */
+export function usePitch(id: string | undefined) {
+  return useQuery({
+    queryKey: ["pitch", id],
+    enabled: Boolean(id),
+    queryFn: async (): Promise<Pitch> => {
+      const { data, error } = await supabase
+        .from("piches_pitches")
+        .select("*")
+        .eq("id", id!)
+        .single();
+      if (error) throw error;
+      return data as Pitch;
+    },
+  });
+}
+
+/**
+ * Varumärkets status speglar den affär som kommit längst. En kund som redan
+ * levererat en gång ska inte hoppa tillbaka till "pitchad" bara för att en ny
+ * pitch skickas, och en vunnen kund ska inte se ut som ett kallt lead.
+ */
+async function syncBrandStatus(brandId: string) {
+  const { data } = await supabase.from("piches_pitches").select("status").eq("brand_id", brandId);
+  const statuses = (data ?? []).map((r) => r.status as PitchStatus);
+  if (statuses.length === 0) return;
+
+  let brandStatus: string;
+  if (statuses.some((s) => WON_STATUSES.includes(s))) brandStatus = "vunnen";
+  else if (statuses.includes("offert")) brandStatus = "offert";
+  else if (statuses.includes("svarat")) brandStatus = "svarat";
+  else if (statuses.includes("skickad")) brandStatus = "pitchad";
+  else if (statuses.every((s) => s === "forlorad" || s === "ingen_respons")) brandStatus = "vilande";
+  else return; // bara utkast kvar, lat varumarket ligga dar det ar
+
+  await supabase.from("piches_brands").update({ status: brandStatus }).eq("id", brandId);
+}
+
 export function useCreatePitch() {
   const qc = useQueryClient();
   return useMutation({
@@ -38,20 +87,21 @@ export function useCreatePitch() {
         brand_id: pitch.brand_id,
         pitch_id: pitch.id,
         kind: "pitch",
-        body: pitch.status === "skickad" ? "Pitch skickad" : "Pitchutkast skapat",
+        body: pitch.renewed_from_license_id
+          ? "Förnyelseaffär skapad ur en licens som löper ut"
+          : pitch.status === "skickad"
+            ? "Pitch skickad"
+            : "Pitchutkast skapat",
       });
 
-      // En skickad pitch flyttar automatiskt varumarket framat i pipelinen.
-      if (pitch.status === "skickad") {
-        await supabase.from("piches_brands").update({ status: "pitchad" }).eq("id", pitch.brand_id);
-      }
-
+      await syncBrandStatus(pitch.brand_id);
       return pitch;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pitches"] });
       qc.invalidateQueries({ queryKey: ["brands"] });
       qc.invalidateQueries({ queryKey: ["activities"] });
+      qc.invalidateQueries({ queryKey: ["stats"] });
     },
   });
 }
@@ -59,7 +109,13 @@ export function useCreatePitch() {
 export function useUpdatePitch() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<PitchDraft> }): Promise<Pitch> => {
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      patch: Partial<PitchDraft>;
+    }): Promise<Pitch> => {
       const { data, error } = await supabase
         .from("piches_pitches")
         .update(patch)
@@ -67,11 +123,42 @@ export function useUpdatePitch() {
         .select()
         .single();
       if (error) throw error;
-      return data as Pitch;
+      const pitch = data as Pitch;
+
+      if (patch.status) {
+        await supabase.from("piches_activities").insert({
+          brand_id: pitch.brand_id,
+          pitch_id: pitch.id,
+          kind: "status",
+          body: `Affären flyttades till ${PITCH_STATUS_LABEL[patch.status]}`,
+        });
+        await syncBrandStatus(pitch.brand_id);
+      }
+
+      return pitch;
+    },
+    onSuccess: (pitch) => {
+      qc.invalidateQueries({ queryKey: ["pitches"] });
+      qc.invalidateQueries({ queryKey: ["pitch", pitch.id] });
+      qc.invalidateQueries({ queryKey: ["brands"] });
+      qc.invalidateQueries({ queryKey: ["activities"] });
+      qc.invalidateQueries({ queryKey: ["stats"] });
+    },
+  });
+}
+
+export function useDeletePitch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("piches_pitches").delete().eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pitches"] });
-      qc.invalidateQueries({ queryKey: ["activities"] });
+      qc.invalidateQueries({ queryKey: ["licenses"] });
+      qc.invalidateQueries({ queryKey: ["deliverables"] });
+      qc.invalidateQueries({ queryKey: ["stats"] });
     },
   });
 }

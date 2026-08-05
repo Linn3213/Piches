@@ -1,11 +1,16 @@
 import { Link } from "react-router-dom";
 import { useBrands } from "@/hooks/useBrands";
-import { useExpiryRadar } from "@/hooks/useLicenses";
+import { useExpiryRadar, useLicenses } from "@/hooks/useLicenses";
+import { useRenewalQueue } from "@/hooks/useRenewals";
+import { useEconomy } from "@/hooks/useEconomy";
+import { usePitches } from "@/hooks/usePitches";
 import { useTasks } from "@/hooks/useTasks";
 import { useStats } from "@/hooks/useStats";
-import { daysUntilExpiry } from "@/lib/rights";
-import { formatMoney, relativeDays } from "@/lib/format";
+import { days, formatMoney, plural, relativeDays } from "@/lib/format";
 import { Badge, Card, Empty, Icon, Loading, Stat } from "@/components/ui";
+import { WON_STATUSES } from "@/types/db";
+
+type Urgency = "hog" | "medel" | "lag";
 
 type Action = {
   id: string;
@@ -13,20 +18,28 @@ type Action = {
   context: string;
   href: string;
   icon: string;
-  urgency: "hog" | "medel" | "lag";
+  urgency: Urgency;
   meta: string;
 };
 
 /**
- * "Idag ska du:" — samma tanke som Stitch-skissen, men matad med riktig
- * data. Prioriteringen är medvetet enkel och förklarlig: utgående licenser
- * först, för det är de som faktiskt kostar pengar att missa.
+ * "Idag ska du:" med riktig data bakom.
+ *
+ * Prioriteringen är medvetet enkel och går att förklara: pengar som redan är
+ * intjänade men inte inbetalda ligger överst, därefter licenser på väg att gå
+ * ut, sedan levererat material utan registrerade rättigheter, och sist det
+ * vanliga uppföljningsarbetet. Ordningen följer alltså hur dyrt det är att
+ * missa saken, inte hur nyligen den dök upp.
  */
 export default function Dashboard() {
   const { data: radar, isLoading: radarLoading } = useExpiryRadar();
+  const { data: licenses } = useLicenses();
   const { data: brands } = useBrands();
+  const { data: pitches } = usePitches();
   const { data: tasks } = useTasks();
   const { data: stats } = useStats();
+  const renewals = useRenewalQueue();
+  const economy = useEconomy();
 
   if (radarLoading) return <Loading />;
 
@@ -34,19 +47,66 @@ export default function Dashboard() {
   const today = new Date();
   const actions: Action[] = [];
 
-  for (const l of radar?.expiring ?? []) {
-    const days = daysUntilExpiry(l, today) ?? 0;
+  // 1. Sena fakturor. Redan tjanade pengar som inte kommit in.
+  for (const { pitch, daysLate } of economy.overdue) {
     actions.push({
-      id: `lic-${l.id}`,
-      title: `Förnya licensen med ${brandName(l.brand_id)}`,
-      context: l.fee_sek ? `Senast ${formatMoney(l.fee_sek)}` : "Licens löper ut",
-      href: "/rattigheter",
-      icon: "autorenew",
-      urgency: days <= 7 ? "hog" : "medel",
-      meta: days <= 0 ? "går ut idag" : `${days} dagar kvar`,
+      id: `sen-${pitch.id}`,
+      title: `Påminn ${brandName(pitch.brand_id)} om fakturan`,
+      context: `${formatMoney(pitch.value_sek)} som du redan tjänat`,
+      href: `/uppdrag/${pitch.id}`,
+      icon: "running_with_errors",
+      urgency: "hog",
+      meta: `${days(daysLate)} sen`,
     });
   }
 
+  // 2. Licenser att forlanga, med fardigt forslag bakom knappen.
+  for (const r of renewals) {
+    actions.push({
+      id: `forny-${r.license.id}`,
+      title: `Förläng licensen med ${r.brandName}`,
+      context:
+        r.suggestedFee !== null
+          ? `Föreslå ${formatMoney(r.suggestedFee)}`
+          : "Sätt ett pris på förlängningen",
+      href: "/rattigheter",
+      icon: "autorenew",
+      urgency: r.lapsed || (r.daysLeft ?? 99) <= 7 ? "hog" : "medel",
+      meta: r.lapsed ? "redan utgången" : `${days(r.daysLeft ?? 0)} kvar`,
+    });
+  }
+
+  // 3. Levererat utan licens. Klockan startade aldrig, och da kommer
+  //    forlangningen aldrig upp pa radarn overhuvudtaget.
+  const pitchesWithLicense = new Set((licenses ?? []).map((l) => l.pitch_id));
+  for (const p of pitches ?? []) {
+    if (!["levererat", "fakturerat", "betalt"].includes(p.status)) continue;
+    if (pitchesWithLicense.has(p.id)) continue;
+    actions.push({
+      id: `licens-${p.id}`,
+      title: `Registrera rättigheterna för ${brandName(p.brand_id)}`,
+      context: "Levererat men ingen licens, alltså tickar ingen klocka",
+      href: `/uppdrag/${p.id}`,
+      icon: "gavel",
+      urgency: "medel",
+      meta: "saknas",
+    });
+  }
+
+  // 4. Fakturor att skicka pa levererade uppdrag.
+  for (const p of (pitches ?? []).filter((p) => p.status === "levererat")) {
+    actions.push({
+      id: `fakturera-${p.id}`,
+      title: `Fakturera ${brandName(p.brand_id)}`,
+      context: p.value_sek !== null ? formatMoney(p.value_sek) : "Levererat och klart",
+      href: `/uppdrag/${p.id}`,
+      icon: "receipt_long",
+      urgency: "medel",
+      meta: "levererat",
+    });
+  }
+
+  // 5. Vanliga uppgifter.
   for (const t of (tasks ?? []).filter((t) => !t.done_at && t.due_at)) {
     const overdue = new Date(t.due_at as string) < today;
     actions.push({
@@ -60,20 +120,23 @@ export default function Dashboard() {
     });
   }
 
-  for (const b of (brands ?? []).filter((b) => b.status === "svarat")) {
+  // 6. Uppdrag dar de svarat och vantar pa dig.
+  for (const p of (pitches ?? []).filter((p) => p.status === "svarat")) {
     actions.push({
-      id: `brand-${b.id}`,
-      title: `Skicka offert till ${b.name}`,
-      context: "Har svarat, väntar på dig",
-      href: `/varumarken/${b.id}`,
+      id: `offert-${p.id}`,
+      title: `Skicka offert till ${brandName(p.brand_id)}`,
+      context: "De har svarat och väntar på dig",
+      href: `/uppdrag/${p.id}`,
       icon: "mail",
       urgency: "medel",
       meta: "svarat",
     });
   }
 
-  const order = { hog: 0, medel: 1, lag: 2 } as const;
+  const order: Record<Urgency, number> = { hog: 0, medel: 1, lag: 2 };
   actions.sort((a, b) => order[a.urgency] - order[b.urgency]);
+
+  const wonCount = (pitches ?? []).filter((p) => WON_STATUSES.includes(p.status)).length;
 
   return (
     <div className="space-y-8">
@@ -91,7 +154,11 @@ export default function Dashboard() {
         <Empty
           icon="self_improvement"
           title="Inget som brinner"
-          hint="Inga licenser går ut, inga förfallna uppgifter och inga obesvarade varumärken."
+          hint={
+            wonCount === 0
+              ? "Inga sena fakturor och inga licenser på väg ut. Bra läge att skicka några pitchar."
+              : "Inga sena fakturor, inga licenser på väg ut och inga förfallna uppgifter."
+          }
         />
       ) : (
         <ul className="space-y-3">
@@ -126,7 +193,20 @@ export default function Dashboard() {
         </ul>
       )}
 
+      {actions.length > 8 && (
+        <p className="text-center text-body-md text-on-surface-variant">
+          Och {plural(actions.length - 8, "sak", "saker")} till, som inte brådskar lika mycket.
+        </p>
+      )}
+
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stat
+          label="Väntar på betalning"
+          value={economy.money.outstanding > 0 ? formatMoney(economy.money.outstanding) : "–"}
+          sub={economy.overdue.length > 0 ? `${plural(economy.overdue.length, "är redan sen", "är redan sena")}` : "inget sent"}
+          icon="schedule"
+          tone={economy.money.overdue > 0 ? "danger" : undefined}
+        />
         <Stat
           label="Pitchar ute"
           value={String(stats?.pitchesSent ?? 0)}
@@ -134,18 +214,9 @@ export default function Dashboard() {
           icon="send"
         />
         <Stat
-          label="Svarsfrekvens"
-          value={
-            stats?.responseRate === null || stats?.responseRate === undefined
-              ? "–"
-              : `${Math.round(stats.responseRate * 100)}%`
-          }
-          icon="forum"
-        />
-        <Stat
           label="Går ut snart"
           value={String(radar?.expiring.length ?? 0)}
-          sub="licenser att förnya"
+          sub="licenser att förlänga"
           icon="alarm"
           tone={(radar?.expiring.length ?? 0) > 0 ? "danger" : undefined}
         />
