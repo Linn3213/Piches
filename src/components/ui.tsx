@@ -19,9 +19,17 @@ export function Icon({
   size?: number;
 }) {
   return (
+    // overflow-hidden + fast bredd/höjd: om ikontypsnittet inte hunnit ladda
+    // (eller aldrig laddar, som i sandboxens nätverksspärr) faller webbläsaren
+    // tillbaka till att rendera ikonnamnet som text — utan spärren här sprängs
+    // den lilla cirkeln den ofta sitter i och texten kolliderar med rubriken bredvid.
     <span
-      className={clsx("material-symbols-outlined", filled && "filled", className)}
-      style={{ fontSize: size }}
+      className={clsx(
+        "material-symbols-outlined inline-block shrink-0 overflow-hidden align-middle leading-none",
+        filled && "filled",
+        className,
+      )}
+      style={{ fontSize: size, width: size, height: size }}
       aria-hidden="true"
     >
       {name}

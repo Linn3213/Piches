@@ -61,9 +61,13 @@ export default function Revenue() {
 
       <Card>
         <h2 className="mb-6 text-headline-sm">Intäkt per månad</h2>
-        <div className="flex h-44 items-end gap-3">
+        <div className="flex h-44 gap-3">
           {data.revenueByMonth.map((m) => (
-            <div key={m.month} className="flex flex-1 flex-col items-center gap-2">
+            // h-full + justify-end: staplarnas höjd anges i procent, och en
+            // procentandel löser bara ut mot en förälder med satt höjd. Utan
+            // h-full här kollapsar varje stapel till 0, osynlig men fortfarande
+            // i DOM:en — precis det som hände innan den här raden fanns.
+            <div key={m.month} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
               <span className="font-mono text-[11px] text-on-surface-variant">
                 {m.total > 0 ? formatMoney(m.total) : ""}
               </span>
