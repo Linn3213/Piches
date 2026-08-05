@@ -8,6 +8,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { useStats } from "@/hooks/useStats";
 import { days, formatMoney, plural, relativeDays } from "@/lib/format";
 import { Badge, Card, Empty, Icon, Loading, Stat } from "@/components/ui";
+import { Onboarding } from "@/components/Onboarding";
 import { WON_STATUSES } from "@/types/db";
 
 type Urgency = "hog" | "medel" | "lag";
@@ -149,6 +150,8 @@ export default function Dashboard() {
           Idag ska du:
         </h1>
       </div>
+
+      <Onboarding />
 
       {actions.length === 0 ? (
         <Empty

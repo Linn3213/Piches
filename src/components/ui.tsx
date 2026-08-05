@@ -214,10 +214,13 @@ export function Empty({
   title,
   hint,
   icon = "inbox",
+  action,
 }: {
   title: string;
   hint?: string;
   icon?: string;
+  /** Ett tomt läge som inte leder vidare är en återvändsgränd. */
+  action?: ReactNode;
 }) {
   return (
     <div className="rounded-xl border-2 border-dashed border-outline-variant/50 px-6 py-14 text-center">
@@ -226,6 +229,7 @@ export function Empty({
       </div>
       <p className="text-headline-sm text-on-surface">{title}</p>
       {hint && <p className="mx-auto mt-2 max-w-xs text-body-md text-on-surface-variant">{hint}</p>}
+      {action && <div className="mt-6 flex justify-center">{action}</div>}
     </div>
   );
 }

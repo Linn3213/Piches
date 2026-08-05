@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useBrands } from "@/hooks/useBrands";
+import { useBrands, useCreateBrand } from "@/hooks/useBrands";
 import { useCreatePitch, usePitches } from "@/hooks/usePitches";
 import { useLicenses } from "@/hooks/useLicenses";
 import { useEconomy } from "@/hooks/useEconomy";
 import { formatDateFull, formatMoney, plural } from "@/lib/format";
 import { Badge, Button, Card, Empty, Icon, Loading, Modal, PageHeader } from "@/components/ui";
 import { PitchForm } from "@/components/PitchForm";
+import { BrandForm } from "@/components/BrandForm";
 import { PITCH_STATUS_LABEL, type Pitch, type PitchStatus } from "@/types/db";
 
 /**
@@ -36,8 +37,10 @@ export default function Deals() {
   const { data: licenses } = useLicenses();
   const economy = useEconomy();
   const createPitch = useCreatePitch();
+  const createBrand = useCreateBrand();
   const [showClosed, setShowClosed] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
+  const [brandOpen, setBrandOpen] = useState(false);
 
   if (isLoading) return <Loading />;
   if (error) return <p className="text-body-md text-error">Kunde inte hämta uppdragen.</p>;
@@ -82,13 +85,23 @@ export default function Deals() {
       )}
 
       {all.length === 0 ? (
+        // Utan varumarke ar knappen ovanfor utgraad, och da maste tomlaget
+        // sjalvt leda vidare. Annars star hon i en atervandsgrand dar enda
+        // vagen ut ligger i sekundarmenyn.
         <Empty
           icon="handshake"
           title="Inga uppdrag än"
           hint={
             brands?.length
               ? "Skapa ett uppdrag så följer appen det hela vägen till betalt, och håller koll på rättigheterna efteråt."
-              : "Lägg till ett varumärke först, sedan kan du skapa uppdrag på det."
+              : "Uppdrag hänger på ett varumärke, så börja med att lägga till en kund."
+          }
+          action={
+            brands?.length ? (
+              <Button onClick={() => setNewOpen(true)}>Skapa uppdrag</Button>
+            ) : (
+              <Button onClick={() => setBrandOpen(true)}>Lägg till varumärke</Button>
+            )
           }
         />
       ) : (
@@ -153,6 +166,21 @@ export default function Deals() {
           )}
         </>
       )}
+
+      <Modal open={brandOpen} title="Nytt varumärke" onClose={() => setBrandOpen(false)}>
+        <BrandForm
+          submitLabel="Lägg till"
+          busy={createBrand.isPending}
+          onSubmit={(draft) =>
+            createBrand.mutate(draft, {
+              onSuccess: () => {
+                setBrandOpen(false);
+                setNewOpen(true);
+              },
+            })
+          }
+        />
+      </Modal>
 
       <Modal open={newOpen} title="Nytt uppdrag" onClose={() => setNewOpen(false)}>
         <PitchForm

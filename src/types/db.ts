@@ -284,6 +284,8 @@ export type Settings = {
   renewal_lead_days: number;
   /** Påslag på förnyelser, eftersom materialet då är beprövat. */
   renewal_uplift_pct: number;
+  /** Satt när komigång-guiden är avklarad eller bortvald. */
+  onboarded_at: string | null;
   updated_at: string;
 };
 
@@ -302,6 +304,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   rush_fee_pct: 25,
   renewal_lead_days: 30,
   renewal_uplift_pct: 15,
+  onboarded_at: null,
 };
 
 export const FORMAT_LABEL: Record<DeliverableFormat, string> = {
