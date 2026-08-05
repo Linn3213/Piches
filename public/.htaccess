@@ -1,0 +1,52 @@
+# Piches på Hostinger (Apache/LiteSpeed).
+#
+# Appen routar på klienten. Utan regeln nedan slår servern upp /uppdrag/<id>
+# som en fil på disk, hittar ingen, och svarar 404. Det märks inte när man
+# klickar sig runt i appen, bara när någon laddar om sidan eller öppnar en
+# sparad länk, vilket är precis vad man gör med ett uppdrag man jobbar med.
+
+# Hostinger lägger en default.php i varje ny webbrot. Den ska aldrig kunna
+# vinna över appen, och att peka ut ordningen här är tryggare än att radera
+# en fil som servern själv lagt dit.
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Riktiga filer och mappar serveras som vanligt.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Allt annat är en väg inuti appen.
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# index.html får aldrig cachas. Filnamnen på js och css innehåller en hash och
+# byts vid varje bygge, men det hjälper inte om webbläsaren sitter kvar på en
+# gammal index.html som pekar på filer som inte finns längre.
+<IfModule mod_headers.c>
+  <FilesMatch "index\.html$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # Hashade filer kan däremot cachas hårt, eftersom ett nytt innehåll alltid
+  # betyder ett nytt filnamn.
+  <FilesMatch "\.(js|css|woff2?|ttf|otf|eot|svg|png|jpe?g|webp|avif|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# Serverns egen kataloglistning ska aldrig visas.
+Options -Indexes
