@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import type { Settings as SettingsRow } from "@/types/db";
-import { Button, Card, Field, Input, Loading, PageHeader } from "@/components/ui";
+import { Button, Card, Checkbox, Field, Input, Loading, PageHeader } from "@/components/ui";
 
-type NumericKey = Exclude<keyof SettingsRow, "user_id" | "updated_at">;
+// Bara de falt som faktiskt ar tal. Tidigare tog den har typen med aven
+// text- och boolean-falten, vilket gjorde att Number() kunde slappas los pa
+// ett organisationsnummer.
+type NumericKey = {
+  [K in keyof SettingsRow]: SettingsRow[K] extends number ? K : never;
+}[keyof SettingsRow];
 
 const RATES: { key: NumericKey; label: string; hint: string }[] = [
   { key: "base_video_rate", label: "Video, per styck", hint: "Reel, TikTok och UGC-annons räknas som video" },
@@ -38,12 +43,147 @@ export default function Settings() {
   const set = (key: NumericKey, value: number) =>
     setDraft((prev) => ({ ...prev, [key]: value }));
 
+  // Texter och kryssrutor delar samma utkast, men far egna hjalpare eftersom
+  // Number() pa ett organisationsnummer hade gett NaN.
+  type TextKey = {
+    [K in keyof SettingsRow]: SettingsRow[K] extends string | null ? K : never;
+  }[keyof SettingsRow];
+  type BoolKey = {
+    [K in keyof SettingsRow]: SettingsRow[K] extends boolean ? K : never;
+  }[keyof SettingsRow];
+
+  const txt = (key: TextKey) => String(draft[key] ?? settings[key] ?? "");
+  const setText = (key: TextKey, value: string) =>
+    setDraft((prev) => ({ ...prev, [key]: value.trim() === "" ? null : value }));
+  const bool = (key: BoolKey) => Boolean(draft[key] ?? settings[key]);
+  const setBool = (key: BoolKey, value: boolean) =>
+    setDraft((prev) => ({ ...prev, [key]: value }));
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Inställningar"
         subtitle="Din prislista styr prisförslagen. Justera i takt med vad marknaden faktiskt betalar."
       />
+
+      <Card className="space-y-5">
+        <div>
+          <h2 className="text-headline-sm">Ditt företag</h2>
+          <p className="mt-1 max-w-prose text-body-md text-on-surface-variant">
+            Uppgifterna hamnar på fakturor och avtal. Utan organisationsnummer och en betalväg är
+            fakturan inte komplett, och då dröjer betalningen.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Företagsnamn">
+            <Input
+              value={txt("company_name")}
+              onChange={(e) => setText("company_name", e.target.value)}
+              placeholder="Ditt AB eller enskild firma"
+            />
+          </Field>
+          <Field label="Organisationsnummer">
+            <Input
+              value={txt("company_orgnr")}
+              onChange={(e) => setText("company_orgnr", e.target.value)}
+              placeholder="556677-8899"
+            />
+          </Field>
+          <Field label="Momsregistreringsnummer" hint="Vanligtvis SE + orgnr utan bindestreck + 01.">
+            <Input
+              value={txt("company_vat_nr")}
+              onChange={(e) => setText("company_vat_nr", e.target.value)}
+              placeholder="SE556677889901"
+            />
+          </Field>
+          <Field label="Mejladress på fakturan">
+            <Input
+              type="email"
+              value={txt("company_email")}
+              onChange={(e) => setText("company_email", e.target.value)}
+              placeholder="info@essensiadesign.se"
+            />
+          </Field>
+          <Field label="Adress">
+            <Input
+              value={txt("company_address")}
+              onChange={(e) => setText("company_address", e.target.value)}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Postnummer">
+              <Input value={txt("company_zip")} onChange={(e) => setText("company_zip", e.target.value)} />
+            </Field>
+            <Field label="Ort">
+              <Input value={txt("company_city")} onChange={(e) => setText("company_city", e.target.value)} />
+            </Field>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Checkbox
+            label="Godkänd för F-skatt"
+            checked={bool("has_f_skatt")}
+            onChange={(v) => setBool("has_f_skatt", v)}
+          />
+          <Checkbox
+            label="Momsregistrerad"
+            checked={bool("vat_registered")}
+            onChange={(v) => setBool("vat_registered", v)}
+          />
+        </div>
+        {!bool("vat_registered") && (
+          <p className="text-body-md text-on-surface-variant">
+            Ingen moms läggs på fakturorna så länge den här är avstängd. Passerar du
+            omsättningsgränsen under året behöver du registrera dig och slå på den igen.
+          </p>
+        )}
+      </Card>
+
+      <Card className="space-y-5">
+        <div>
+          <h2 className="text-headline-sm">Betalning och fakturanummer</h2>
+          <p className="mt-1 max-w-prose text-body-md text-on-surface-variant">
+            Minst en betalväg behövs. Har du utländska kunder krävs dessutom IBAN och BIC.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Bankgiro">
+            <Input value={txt("payment_bankgiro")} onChange={(e) => setText("payment_bankgiro", e.target.value)} placeholder="123-4567" />
+          </Field>
+          <Field label="Swish">
+            <Input value={txt("payment_swish")} onChange={(e) => setText("payment_swish", e.target.value)} />
+          </Field>
+          <Field label="IBAN">
+            <Input value={txt("payment_iban")} onChange={(e) => setText("payment_iban", e.target.value)} />
+          </Field>
+          <Field label="BIC">
+            <Input value={txt("payment_bic")} onChange={(e) => setText("payment_bic", e.target.value)} />
+          </Field>
+          <Field label="Betalningsvillkor, dagar">
+            <Input
+              type="number"
+              min={0}
+              max={365}
+              value={num("payment_terms_days")}
+              onChange={(e) => set("payment_terms_days", Number(e.target.value))}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Nummerprefix" hint="Frivilligt.">
+              <Input value={txt("invoice_prefix")} onChange={(e) => setText("invoice_prefix", e.target.value)} placeholder="2026-" />
+            </Field>
+            <Field label="Nästa nummer" hint="Serien måste vara obruten.">
+              <Input
+                type="number"
+                min={1}
+                value={num("invoice_next_number")}
+                onChange={(e) => set("invoice_next_number", Math.max(1, Number(e.target.value) || 1))}
+              />
+            </Field>
+          </div>
+        </div>
+      </Card>
 
       <Card className="space-y-5">
         <h2 className="text-headline-sm">Grundpriser</h2>

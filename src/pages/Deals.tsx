@@ -8,6 +8,7 @@ import { formatDateFull, formatMoney, plural } from "@/lib/format";
 import { Badge, Button, Card, Empty, Icon, Loading, Modal, PageHeader } from "@/components/ui";
 import { PitchForm } from "@/components/PitchForm";
 import { BrandForm } from "@/components/BrandForm";
+import { BriefImport } from "@/components/BriefImport";
 import { PITCH_STATUS_LABEL, type Pitch, type PitchStatus } from "@/types/db";
 
 /**
@@ -41,6 +42,7 @@ export default function Deals() {
   const [showClosed, setShowClosed] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
+  const [briefOpen, setBriefOpen] = useState(false);
 
   if (isLoading) return <Loading />;
   if (error) return <p className="text-body-md text-error">Kunde inte hämta uppdragen.</p>;
@@ -60,9 +62,15 @@ export default function Deals() {
         title="Uppdrag"
         subtitle="Hela vägen från förfrågan till betald faktura, och vidare till förnyelsen."
         action={
-          <Button onClick={() => setNewOpen(true)} disabled={!brands?.length}>
-            Nytt uppdrag
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" onClick={() => setBriefOpen(true)}>
+              <Icon name="content_paste" size={18} />
+              Klistra in förfrågan
+            </Button>
+            <Button onClick={() => setNewOpen(true)} disabled={!brands?.length}>
+              Nytt uppdrag
+            </Button>
+          </div>
         }
       />
 
@@ -166,6 +174,15 @@ export default function Deals() {
           )}
         </>
       )}
+
+      <Modal
+        open={briefOpen}
+        title="Läs av en förfrågan"
+        wide
+        onClose={() => setBriefOpen(false)}
+      >
+        <BriefImport onClose={() => setBriefOpen(false)} />
+      </Modal>
 
       <Modal open={brandOpen} title="Nytt varumärke" onClose={() => setBrandOpen(false)}>
         <BrandForm

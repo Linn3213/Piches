@@ -46,3 +46,46 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* Utskrift.
+   Fakturan skrivs ut till PDF direkt i webbläsaren, alltså utan någon
+   betaltjänst. Allt som inte hör hemma på papperet döljs, och sidan får vita
+   ytor oavsett vilket tema skärmen råkar visa. */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #1a1a1a !important;
+  }
+
+  /* Navigering, knappar och allt annat som bara hör skärmen till. */
+  aside,
+  header.glass,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .invoice-sheet {
+    box-shadow: none !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  /* En rad ska aldrig brytas mitt itu över ett sidbyte. */
+  tr,
+  li {
+    break-inside: avoid;
+  }
+}

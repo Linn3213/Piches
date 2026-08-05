@@ -48,6 +48,18 @@ export type Brand = {
   observation: string | null;
   notes: string | null;
   next_action_at: string | null;
+  // Faktura- och avtalsuppgifter (0005). Landet styr momsen, och VAT-numret
+  // avgor om en EU-kund faktureras med omvand betalningsskyldighet.
+  org_nr: string | null;
+  vat_nr: string | null;
+  address: string | null;
+  zip: string | null;
+  city: string | null;
+  /** Tvåbokstavskod, versaler. Styr momsbehandlingen. */
+  country: string;
+  is_company: boolean;
+  /** Märkning kunden kräver för att fakturan ska gå igenom deras system. */
+  invoice_reference: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -286,6 +298,25 @@ export type Settings = {
   renewal_uplift_pct: number;
   /** Satt när komigång-guiden är avklarad eller bortvald. */
   onboarded_at: string | null;
+  // Avsandaruppgifter for avtal och fakturor (0005).
+  company_name: string | null;
+  company_orgnr: string | null;
+  company_vat_nr: string | null;
+  company_address: string | null;
+  company_zip: string | null;
+  company_city: string | null;
+  company_email: string | null;
+  company_phone: string | null;
+  has_f_skatt: boolean;
+  /** Under omsättningsgränsen behöver man inte vara momsregistrerad. */
+  vat_registered: boolean;
+  payment_bankgiro: string | null;
+  payment_iban: string | null;
+  payment_bic: string | null;
+  payment_swish: string | null;
+  payment_terms_days: number;
+  invoice_prefix: string | null;
+  invoice_next_number: number;
   updated_at: string;
 };
 
@@ -305,6 +336,24 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   renewal_lead_days: 30,
   renewal_uplift_pct: 15,
   onboarded_at: null,
+  // Foretagsuppgifterna fylls i av anvandaren, de gar inte att gissa.
+  company_name: null,
+  company_orgnr: null,
+  company_vat_nr: null,
+  company_address: null,
+  company_zip: null,
+  company_city: null,
+  company_email: null,
+  company_phone: null,
+  has_f_skatt: true,
+  vat_registered: true,
+  payment_bankgiro: null,
+  payment_iban: null,
+  payment_bic: null,
+  payment_swish: null,
+  payment_terms_days: 30,
+  invoice_prefix: null,
+  invoice_next_number: 1,
 };
 
 export const FORMAT_LABEL: Record<DeliverableFormat, string> = {

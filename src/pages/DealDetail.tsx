@@ -285,12 +285,20 @@ export default function DealDetail() {
 
       {/* Pengarna -------------------------------------------------------- */}
       <section className="space-y-4">
-        <div>
-          <h2 className="text-headline-sm text-on-surface">Pengarna</h2>
-          <p className="text-body-md text-on-surface-variant">
-            Alla belopp är exklusive moms. Fakturan skapas i ditt bokföringsprogram, här sparas bara
-            numret och datumen så att du ser vad som är obetalt.
-          </p>
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+          <div>
+            <h2 className="text-headline-sm text-on-surface">Pengarna</h2>
+            <p className="max-w-prose text-body-md text-on-surface-variant">
+              Alla belopp är exklusive moms. Fakturaunderlaget skapas här, men den bokförs och
+              sparas i ditt bokföringsprogram.
+            </p>
+          </div>
+          <Link to={`/uppdrag/${deal.id}/faktura`} className="shrink-0">
+            <Button variant="ghost">
+              <Icon name="receipt_long" size={18} />
+              {deal.invoice_number ? `Faktura ${deal.invoice_number}` : "Skapa faktura"}
+            </Button>
+          </Link>
         </div>
 
         <Card className="space-y-4">
