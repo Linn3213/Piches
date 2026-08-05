@@ -9,6 +9,7 @@ import { Badge, Button, Card, Empty, Icon, Loading, Modal, PageHeader } from "@/
 import { PitchForm } from "@/components/PitchForm";
 import { BrandForm } from "@/components/BrandForm";
 import { BriefImport } from "@/components/BriefImport";
+import { daysBetween, parseDate } from "@/lib/rights";
 import { PITCH_STATUS_LABEL, type Pitch, type PitchStatus } from "@/types/db";
 
 /**
@@ -251,11 +252,13 @@ function MoneyTile({
 }
 
 function DealCard({ deal, brand, licenses }: { deal: Pitch; brand: string; licenses: number }) {
+  // Samma tolkning som ekonomin anvander. Rakt `new Date("2026-08-05")` blir
+  // UTC-midnatt, alltsa kl 02 svensk sommartid, och da markerades en faktura
+  // som forfaller idag som forsenad har medan Intakter sa noll.
+  const daysLeft =
+    deal.due_on !== null ? daysBetween(new Date(), parseDate(deal.due_on)) : null;
   const overdue =
-    deal.invoiced_on !== null &&
-    deal.paid_on === null &&
-    deal.due_on !== null &&
-    new Date(deal.due_on) < new Date();
+    deal.invoiced_on !== null && deal.paid_on === null && daysLeft !== null && daysLeft < 0;
 
   return (
     <Link to={`/uppdrag/${deal.id}`} className="block">

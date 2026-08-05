@@ -86,7 +86,7 @@ export function DeliverableForm({
         </Field>
       </div>
 
-      <Field label="Hook" hint="Första sekunden. Den avgör om resten ens blir sedd.">
+      <Field label="Hook" hint="Första sekunden, den som avgör om resten av filmen ens blir sedd.">
         <Input
           value={hook}
           onChange={(e) => setHook(e.target.value)}

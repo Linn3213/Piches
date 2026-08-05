@@ -21,7 +21,7 @@ import { Button, Card, Icon, Loading } from "@/components/ui";
  */
 export default function InvoicePage() {
   const { id } = useParams<{ id: string }>();
-  const { data: deal, isLoading } = usePitch(id);
+  const { data: deal, isLoading, error } = usePitch(id);
   const { data: brand } = useBrand(deal?.brand_id);
   const { data: deliverables } = useDeliverables(id);
   const { data: allLicenses } = useLicenses();
@@ -47,6 +47,7 @@ export default function InvoicePage() {
   }, [deal, brand, deliverables, licenses, settings]);
 
   if (!id) return <Navigate to="/uppdrag" replace />;
+  if (error) return <p className="text-body-md text-error">Vi nådde inte servern just nu, prova att ladda om sidan.</p>;
   if (isLoading || !invoice || !deal || !settings) return <Loading />;
 
   const alreadyBooked = Boolean(deal.invoice_number);

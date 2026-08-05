@@ -246,8 +246,8 @@ export function LicenseForm({
         <p className="text-body-md text-on-surface-variant">
           {perpetual ? (
             <>
-              Ingen klocka. Materialet kan aldrig säljas igen, så avgiften behöver täcka det du ger
-              bort för alltid.
+              Då tickar ingen klocka alls, materialet kan aldrig säljas igen, och avgiften behöver
+              täcka det du ger bort för alltid.
             </>
           ) : (
             <>

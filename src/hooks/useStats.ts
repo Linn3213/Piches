@@ -25,21 +25,25 @@ export function useStats() {
   return useQuery({
     queryKey: ["stats"],
     queryFn: async (): Promise<Stats> => {
+      // Hela listan hamtas, inte bara det som skickats. En fornyelse och en
+      // brief-importerad forfragan har inget sent_at, och filtrerades de bort
+      // har raknades de aldrig som vunna, trots att de syns som vunna overallt
+      // annars. Skickat-filtret galler bara svarsfrekvensens namnare.
       const { data, error } = await supabase
         .from("piches_pitches")
-        .select("status, sent_at, value_sek")
-        .not("sent_at", "is", null);
+        .select("status, sent_at, value_sek");
       if (error) throw error;
-      const pitches = data as Pick<Pitch, "status" | "sent_at" | "value_sek">[];
+      const alla = data as Pick<Pitch, "status" | "sent_at" | "value_sek">[];
+      const skickade = alla.filter((p) => p.sent_at !== null);
 
-      const pitchesSent = pitches.length;
+      const pitchesSent = skickade.length;
       const thirtyDaysAgo = Date.now() - 30 * 86_400_000;
-      const pitchesSentLast30d = pitches.filter(
+      const pitchesSentLast30d = skickade.filter(
         (p) => p.sent_at && new Date(p.sent_at).getTime() >= thirtyDaysAgo,
       ).length;
 
-      const responded = pitches.filter((p) => RESPONDED_STATUSES.includes(p.status)).length;
-      const won = pitches.filter((p) => WON_STATUSES.includes(p.status));
+      const responded = skickade.filter((p) => RESPONDED_STATUSES.includes(p.status)).length;
+      const won = alla.filter((p) => WON_STATUSES.includes(p.status));
       const wonValues = won.map((p) => p.value_sek).filter((v): v is number => v !== null);
 
       return {

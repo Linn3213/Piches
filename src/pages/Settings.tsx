@@ -29,7 +29,7 @@ const UPLIFTS: { key: NumericKey; label: string; hint: string }[] = [
 ];
 
 export default function Settings() {
-  const { data: settings, isLoading } = useSettings();
+  const { data: settings, isLoading, error } = useSettings();
   const update = useUpdateSettings();
   const [draft, setDraft] = useState<Partial<SettingsRow>>({});
 
@@ -37,6 +37,7 @@ export default function Settings() {
     if (settings) setDraft(settings);
   }, [settings]);
 
+  if (error) return <p className="text-body-md text-error">Vi nådde inte servern just nu, prova att ladda om sidan.</p>;
   if (isLoading || !settings) return <Loading />;
 
   const num = (key: NumericKey) => Number(draft[key] ?? settings[key]);
@@ -166,7 +167,9 @@ export default function Settings() {
               min={0}
               max={365}
               value={num("payment_terms_days")}
-              onChange={(e) => set("payment_terms_days", Number(e.target.value))}
+              onChange={(e) =>
+                set("payment_terms_days", Math.min(365, Math.max(0, Number(e.target.value) || 0)))
+              }
             />
           </Field>
           <div className="grid grid-cols-2 gap-3">
@@ -186,6 +189,60 @@ export default function Settings() {
       </Card>
 
       <Card className="space-y-5">
+        <div>
+          <h2 className="text-headline-sm">Dina mål</h2>
+          <p className="mt-1 max-w-prose text-body-md text-on-surface-variant">
+            Utan ett mål går det bara att se hur stor en affär var, aldrig om den var bra. De här
+            siffrorna är vad Lönsamhet räknar emot.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Vad en timme av din tid ska vara värd"
+            hint="Allt under det är en förlustaffär, även när fakturan ser bra ut."
+          >
+            <Input
+              type="number"
+              min={0}
+              step={50}
+              value={num("target_hourly_rate")}
+              onChange={(e) => set("target_hourly_rate", Math.max(0, Number(e.target.value) || 0))}
+            />
+          </Field>
+          <Field label="Vad du vill dra in per månad">
+            <Input
+              type="number"
+              min={0}
+              step={1000}
+              value={num("target_monthly_revenue")}
+              onChange={(e) =>
+                set("target_monthly_revenue", Math.max(0, Number(e.target.value) || 0))
+              }
+            />
+          </Field>
+          <Field label="Hur många som följer dig" hint="Underlaget för att räkna på en produkt.">
+            <Input
+              type="number"
+              min={0}
+              value={num("audience_size")}
+              onChange={(e) => set("audience_size", Math.max(0, Number(e.target.value) || 0))}
+            />
+          </Field>
+          <Field
+            label="Hur många som står på din lista"
+            hint="En lista säljer betydligt bättre än ett flöde, så den räknas för sig."
+          >
+            <Input
+              type="number"
+              min={0}
+              value={num("email_list_size")}
+              onChange={(e) => set("email_list_size", Math.max(0, Number(e.target.value) || 0))}
+            />
+          </Field>
+        </div>
+      </Card>
+
+      <Card className="space-y-5">
         <h2 className="text-headline-sm">Grundpriser</h2>
         <div className="grid gap-4 sm:grid-cols-3">
           {RATES.map((r) => (
@@ -194,7 +251,7 @@ export default function Settings() {
                 type="number"
                 min={0}
                 value={num(r.key)}
-                onChange={(e) => set(r.key, Number(e.target.value))}
+                onChange={(e) => set(r.key, Math.max(0, Number(e.target.value) || 0))}
               />
             </Field>
           ))}
@@ -215,7 +272,7 @@ export default function Settings() {
                 type="number"
                 min={0}
                 value={num(u.key)}
-                onChange={(e) => set(u.key, Number(e.target.value))}
+                onChange={(e) => set(u.key, Math.max(0, Number(e.target.value) || 0))}
               />
             </Field>
           ))}
@@ -233,14 +290,18 @@ export default function Settings() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             label="Varna så här många dagar innan en licens går ut"
-            hint="Styr utgångsradarn och notisbrickan."
+            hint="Styr när licensen dyker upp på Rättigheter och när siffran syns i menyn."
           >
             <Input
               type="number"
               min={1}
               max={365}
               value={num("renewal_lead_days")}
-              onChange={(e) => set("renewal_lead_days", Number(e.target.value))}
+              onChange={(e) =>
+                // Aldrig noll. Ett tomt falt gav 0 dagars bevakning, alltsa
+                // tystnade utgangsradarn helt utan att nagot sades.
+                set("renewal_lead_days", Math.min(365, Math.max(1, Number(e.target.value) || 1)))
+              }
             />
           </Field>
           <Field

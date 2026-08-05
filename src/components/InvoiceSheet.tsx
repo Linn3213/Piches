@@ -1,5 +1,5 @@
 import type { Invoice } from "@/lib/invoice";
-import { formatDateFull, formatMoney } from "@/lib/format";
+import { days, formatDateFull, formatMoney } from "@/lib/format";
 import { Icon } from "@/components/ui";
 
 /**
@@ -38,7 +38,7 @@ export function InvoiceSheet({ invoice }: { invoice: Invoice }) {
               </tr>
               <tr>
                 <td className="pr-4 text-black/55">Betalningsvillkor</td>
-                <td className="font-mono">{invoice.payment.termsDays} dagar</td>
+                <td className="font-mono">{days(invoice.payment.termsDays)}</td>
               </tr>
               {invoice.buyerReference && (
                 <tr>

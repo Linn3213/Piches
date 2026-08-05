@@ -200,7 +200,7 @@ export const RESPONDED_STATUSES: PitchStatus[] = [
 ];
 
 export const STATUS_HINT: Partial<Record<PitchStatus, string>> = {
-  vunnen: "Lägg upp leverablerna och registrera rättigheterna.",
+  vunnen: "Lägg upp det du ska leverera och registrera rättigheterna.",
   produktion: "Materialet spelas in och klipps.",
   levererat: "Levererat till kund. Nu tickar licensklockan.",
   fakturerat: "Fakturan är skickad, pengarna har inte kommit än.",
@@ -317,6 +317,12 @@ export type Settings = {
   payment_terms_days: number;
   invoice_prefix: string | null;
   invoice_next_number: number;
+  // Lonsamhetsmotorn (0006). Utan ett mal gar det inte att saga om en affar
+  // var bra, bara hur stor den var.
+  target_hourly_rate: number;
+  target_monthly_revenue: number;
+  audience_size: number;
+  email_list_size: number;
   updated_at: string;
 };
 
@@ -354,6 +360,10 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   payment_terms_days: 30,
   invoice_prefix: null,
   invoice_next_number: 1,
+  target_hourly_rate: 1200,
+  target_monthly_revenue: 50000,
+  audience_size: 0,
+  email_list_size: 0,
 };
 
 export const FORMAT_LABEL: Record<DeliverableFormat, string> = {
@@ -379,4 +389,58 @@ export const TERRITORY_LABEL: Record<Territory, string> = {
   norden: "Norden",
   eu: "EU",
   global: "Globalt",
+};
+
+// --- Digitala produkter (0006_profit_engine.sql) --------------------------
+
+export type ProductKind =
+  | "mall"
+  | "guide"
+  | "minikurs"
+  | "kurs"
+  | "medlemskap"
+  | "konsultation"
+  | "workshop"
+  | "annat";
+
+export type ProductStatus = "ide" | "byggs" | "lanserad" | "vilande";
+
+export type Product = {
+  id: string;
+  user_id: string;
+  name: string;
+  kind: ProductKind;
+  status: ProductStatus;
+  price_sek: number;
+  build_hours: number;
+  monthly_hours: number;
+  build_cost_sek: number;
+  monthly_cost_sek: number;
+  /** Andel av publiken som köper, i procent. */
+  conversion_pct: number;
+  recurring: boolean;
+  notes: string | null;
+  /** Faktiskt utfall. Slår alltid uppskattningen när det finns. */
+  units_sold: number;
+  revenue_sek: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export const PRODUCT_KIND_LABEL: Record<ProductKind, string> = {
+  mall: "Mall",
+  guide: "Guide",
+  minikurs: "Minikurs",
+  kurs: "Kurs",
+  medlemskap: "Medlemskap",
+  konsultation: "Rådgivning",
+  workshop: "Workshop",
+  annat: "Annat",
+};
+
+export const PRODUCT_STATUS_LABEL: Record<ProductStatus, string> = {
+  ide: "Idé",
+  byggs: "Byggs",
+  lanserad: "Lanserad",
+  vilande: "Vilande",
 };

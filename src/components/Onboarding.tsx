@@ -78,7 +78,9 @@ export function Onboarding() {
       id: "uppdrag",
       done: hasDeal,
       title: "Skapa ditt första uppdrag",
-      body: "Uppdraget följs hela vägen till betalt, och när du registrerar rättigheterna börjar klockan ticka mot förnyelsen.",
+      body: hasBrand
+        ? "Uppdraget följs hela vägen till betalt, och när du registrerar rättigheterna börjar klockan ticka mot förnyelsen."
+        : "Lägg till ett varumärke först, uppdraget behöver en kund att hänga på.",
       action: "Skapa",
       onClick: () => setDealOpen(true),
       disabled: !hasBrand,
@@ -102,7 +104,7 @@ export function Onboarding() {
             </h2>
             <p className="mt-1 max-w-prose text-body-md text-on-surface-variant">
               {allDone
-                ? "Allt som behövs finns på plats. Härifrån sköter appen bevakningen åt dig."
+                ? "Allt som behövs finns på plats, och nästa gång du loggar in ligger det som brådskar redan överst."
                 : "Tre saker, sedan börjar appen jobba åt dig i stället för tvärtom."}
             </p>
           </div>

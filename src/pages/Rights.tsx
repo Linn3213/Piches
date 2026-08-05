@@ -16,7 +16,7 @@ import { Badge, Button, Card, Empty, Icon, Input, Loading, PageHeader, Stat } fr
  * varje leverans som en licens med en klocka, inte som en avklarad uppgift.
  */
 export default function Rights() {
-  const { data: radar, isLoading } = useExpiryRadar();
+  const { data: radar, isLoading, error } = useExpiryRadar();
   const { data: licenses } = useLicenses();
   const { data: brands } = useBrands();
   const { data: deliverables } = useDeliverables();
@@ -28,7 +28,7 @@ export default function Rights() {
 
   const brandName = (id: string) => brands?.find((b) => b.id === id)?.name ?? "Okänt varumärke";
   const deliverableTitle = (id: string | null) =>
-    id ? (deliverables?.find((d) => d.id === id)?.title ?? "Leverabel") : "Hela uppdraget";
+    id ? (deliverables?.find((d) => d.id === id)?.title ?? "Namnlöst material") : "Hela uppdraget";
 
   const conflicts = useMemo(() => {
     if (!licenses || !checkCategory.trim()) return [];
@@ -40,6 +40,7 @@ export default function Rights() {
     [radar],
   );
 
+  if (error) return <p className="text-body-md text-error">Vi nådde inte servern just nu, prova att ladda om sidan.</p>;
   if (isLoading || !radar) return <Loading />;
 
   const hasAnything = (licenses?.length ?? 0) > 0;
@@ -48,14 +49,19 @@ export default function Rights() {
     <div className="space-y-8">
       <PageHeader
         title="Rättigheter"
-        subtitle={`Varje licens har en klocka. Bevakningsfönster: ${radar.leadDays} dagar.`}
+        subtitle={`Varje licens har en klocka, och du får veta ${days(radar.leadDays)} innan den går ut.`}
       />
 
       {!hasAnything ? (
         <Empty
           icon="gavel"
           title="Inga licenser registrerade än"
-          hint="Registrera rättigheterna på ett uppdrag så börjar klockan ticka, och du får en påminnelse innan de går ut."
+          hint="Rättigheterna registreras inne på ett uppdrag, och då börjar klockan ticka så att du får veta innan de går ut."
+          action={
+            <Link to="/uppdrag">
+              <Button>Gå till uppdragen</Button>
+            </Link>
+          }
         />
       ) : (
         <>
@@ -93,7 +99,7 @@ export default function Rights() {
             <SectionTitle
               icon="autorenew"
               title="Att förnya"
-              hint="Kunden har materialet i drift och vet vad det gav. Det är enda gången på året du säljer till någon som redan känner till svaret."
+              hint="Kunden har materialet i drift och vet redan vad det gav, så det är enda gången på året du säljer till någon som känner till svaret i förväg."
             />
             {renewals.length === 0 ? (
               <Card className="text-body-md text-on-surface-variant">
@@ -200,7 +206,7 @@ export default function Rights() {
               <SectionTitle
                 icon="inventory_2"
                 title="Fritt att sälja igen"
-                hint="Färdigt material utan bindning. Ren marginal, ingen ny produktion."
+                hint="Material som är klart och inte längre bundet till någon, alltså rena pengar utan att du behöver spela in något nytt."
               />
               <ul className="grid gap-3 sm:grid-cols-2">
                 {radar.relicensable.map(({ deliverableId, licenses: ls }) => (
@@ -225,7 +231,7 @@ export default function Rights() {
               <SectionTitle
                 icon="history"
                 title="Utgångna utan förnyelse"
-                hint="Missade förnyelser. Det går fortfarande att höra av sig."
+                hint="Förnyelser som hann rinna ut, men det går fortfarande utmärkt att höra av sig."
               />
               <ul className="space-y-3">
                 {radar.lapsed.slice(0, 8).map((l) => (

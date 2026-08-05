@@ -42,7 +42,9 @@ export function PitchForm({
           ...(needsBrand ? { brand_id: brandId } : {}),
           subject: draft.subject?.trim() || null,
           observation: draft.observation?.trim() || null,
-          sent_at: draft.status === "utkast" ? null : draft.sent_at,
+          // Tom strang far aldrig na databasen: Postgres kastar da ett fel som
+          // ingen av modalerna visar, sa sparandet misslyckades helt tyst.
+          sent_at: draft.status === "utkast" ? null : draft.sent_at || null,
         });
       }}
     >

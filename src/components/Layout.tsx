@@ -11,6 +11,7 @@ const NAV = [
   { to: "/rattigheter", label: "Rättigheter", icon: "gavel", end: false },
   { to: "/pris", label: "Pris", icon: "calculate", end: false },
   { to: "/intakter", label: "Intäkter", icon: "payments", end: false },
+  { to: "/lonsamhet", label: "Lönsamhet", icon: "trending_up", end: false },
 ];
 
 const SECONDARY = [
@@ -34,7 +35,7 @@ export function Layout() {
           <Logo size={36} />
           <div>
             <p className="text-headline-sm tracking-tight text-primary">Piches</p>
-            <p className="font-mono text-[10px] text-on-surface-variant">Rättighetsmotor</p>
+            <p className="font-mono text-[10px] text-on-surface-variant">Koll på rättigheterna</p>
           </div>
         </div>
 

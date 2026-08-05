@@ -36,15 +36,21 @@ export default function Login() {
         <Logo size={56} />
         <h1 className="mt-5 text-headline-lg text-on-surface">Piches</h1>
         <p className="mt-2 text-body-lg text-on-surface-variant">
-          Varje uppdrag är en licens med en klocka. Missa aldrig en förnyelse igen.
+          Varje uppdrag är en licens med en klocka, och appen håller reda på den så att ingen förnyelse hinner rinna ut.
         </p>
 
         {sent ? (
           <div className="mt-8 rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-5">
             <p className="text-headline-sm">Kolla mejlen.</p>
             <p className="mt-2 text-body-md text-on-surface-variant">
-              Vi skickade en inloggningslänk till {email}. Länken gäller i en timme.
+              Vi skickade en inloggningslänk till {email}. Länken gäller en kort stund, så använd den direkt.
             </p>
+            <button
+              onClick={() => setSent(false)}
+              className="mt-4 text-body-md text-on-surface-variant underline transition-colors hover:text-on-surface"
+            >
+              Skicka till en annan adress
+            </button>
           </div>
         ) : (
           <form onSubmit={submit} className="mt-8 space-y-4">

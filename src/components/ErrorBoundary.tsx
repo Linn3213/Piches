@@ -28,9 +28,8 @@ export class ErrorBoundary extends Component<Props, State> {
           <h1 className="text-lg font-semibold">Något gick fel</h1>
           <p className="mt-2 text-sm text-on-surface-variant">{this.state.error.message}</p>
           <p className="mt-4 text-xs text-on-surface-variant">
-            Om detta är en ny driftsättning: kontrollera att VITE_SUPABASE_URL och
-            VITE_SUPABASE_PUBLISHABLE_KEY är satta och att sidan är omdeployad
-            efter att de lades till.
+            Något gick sönder på vägen. Prova att ladda om sidan, och hör av dig om
+            det händer igen.
           </p>
         </div>
       </div>

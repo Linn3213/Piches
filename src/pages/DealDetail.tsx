@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useBrand } from "@/hooks/useBrands";
 import { useDeletePitch, usePitch, useUpdatePitch } from "@/hooks/usePitches";
@@ -267,7 +267,7 @@ export default function DealDetail() {
                   license={l}
                   deliverableTitle={
                     l.deliverable_id
-                      ? (items.find((d) => d.id === l.deliverable_id)?.title ?? "Leverabel")
+                      ? (items.find((d) => d.id === l.deliverable_id)?.title ?? "Namnlöst material")
                       : "Hela uppdraget"
                   }
                   leadDays={settings?.renewal_lead_days ?? 30}
@@ -296,114 +296,86 @@ export default function DealDetail() {
           <Link to={`/uppdrag/${deal.id}/faktura`} className="shrink-0">
             <Button variant="ghost">
               <Icon name="receipt_long" size={18} />
-              {deal.invoice_number ? `Faktura ${deal.invoice_number}` : "Skapa faktura"}
+              {deal.invoice_number ? `Faktura ${deal.invoice_number}` : "Ta fram fakturaunderlag"}
             </Button>
           </Link>
         </div>
 
         <Card className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Ordervärde">
-              <Input
-                type="number"
-                min={0}
-                step={100}
-                value={deal.value_sek ?? ""}
-                onChange={(e) =>
-                  updateDeal.mutate({
-                    id: deal.id,
-                    patch: { value_sek: e.target.value === "" ? null : Number(e.target.value) },
-                  })
-                }
-              />
-            </Field>
-            <Field label="Fakturanummer">
-              <Input
-                value={deal.invoice_number ?? ""}
-                onChange={(e) =>
-                  updateDeal.mutate({
-                    id: deal.id,
-                    patch: { invoice_number: e.target.value || null },
-                  })
-                }
-                placeholder="2026-041"
-              />
-            </Field>
-            <Field label="Fakturerad">
-              <Input
-                type="date"
-                value={deal.invoiced_on ?? ""}
-                onChange={(e) =>
-                  updateDeal.mutate({
-                    id: deal.id,
-                    patch: { invoiced_on: e.target.value || null },
-                  })
-                }
-              />
-            </Field>
-            <Field label="Förfaller">
-              <Input
-                type="date"
-                value={deal.due_on ?? ""}
-                onChange={(e) =>
-                  updateDeal.mutate({ id: deal.id, patch: { due_on: e.target.value || null } })
-                }
-              />
-            </Field>
-            <Field label="Betald">
-              <Input
-                type="date"
-                value={deal.paid_on ?? ""}
-                onChange={(e) =>
-                  updateDeal.mutate({ id: deal.id, patch: { paid_on: e.target.value || null } })
-                }
-              />
-            </Field>
-            <Field label="Inköpta kostnader" hint="Redigering, resa, rekvisita, allt du betalade.">
-              <Input
-                type="number"
-                min={0}
-                step={100}
-                value={deal.production_cost_sek ?? ""}
-                onChange={(e) =>
-                  updateDeal.mutate({
-                    id: deal.id,
-                    patch: {
-                      production_cost_sek: e.target.value === "" ? null : Number(e.target.value),
-                    },
-                  })
-                }
-              />
-            </Field>
-            <Field label="Nedlagda timmar" hint="Inspelning, klippning, mejl och möten.">
-              <Input
-                type="number"
-                min={0}
-                step={0.5}
-                value={deal.hours_spent ?? ""}
-                onChange={(e) =>
-                  updateDeal.mutate({
-                    id: deal.id,
-                    patch: { hours_spent: e.target.value === "" ? null : Number(e.target.value) },
-                  })
-                }
-              />
-            </Field>
-            <Field label="Revisionsrundor" hint="Hur många gånger de bad om ändringar.">
-              <Input
-                type="number"
-                min={0}
-                max={99}
-                value={deal.revision_rounds}
-                onChange={(e) =>
-                  updateDeal.mutate({
-                    id: deal.id,
-                    patch: { revision_rounds: Math.max(0, Number(e.target.value) || 0) },
-                  })
-                }
-              />
-            </Field>
+            <SparadRad
+              label="Ordervärde"
+              type="number"
+              step={100}
+              value={deal.value_sek}
+              onCommit={(v) => updateDeal.mutate({ id: deal.id, patch: { value_sek: v as number | null } })}
+            />
+            <SparadRad
+              label="Fakturanummer"
+              value={deal.invoice_number}
+              placeholder="2026-041"
+              text
+              onCommit={(v) => updateDeal.mutate({ id: deal.id, patch: { invoice_number: v as string | null } })}
+            />
+            <SparadRad
+              label="Fakturerad"
+              type="date"
+              value={deal.invoiced_on}
+              text
+              onCommit={(v) => updateDeal.mutate({ id: deal.id, patch: { invoiced_on: v as string | null } })}
+            />
+            <SparadRad
+              label="Förfaller"
+              type="date"
+              value={deal.due_on}
+              text
+              onCommit={(v) => updateDeal.mutate({ id: deal.id, patch: { due_on: v as string | null } })}
+            />
+            <SparadRad
+              label="Betald"
+              type="date"
+              value={deal.paid_on}
+              text
+              onCommit={(v) => updateDeal.mutate({ id: deal.id, patch: { paid_on: v as string | null } })}
+            />
+            <SparadRad
+              label="Inköpta kostnader"
+              hint="Redigering, resa, rekvisita, allt du betalade."
+              type="number"
+              step={100}
+              value={deal.production_cost_sek}
+              onCommit={(v) => updateDeal.mutate({ id: deal.id, patch: { production_cost_sek: v as number | null } })}
+            />
+            <SparadRad
+              label="Nedlagda timmar"
+              hint="Inspelning, klippning, mejl och möten."
+              type="number"
+              step={0.5}
+              value={deal.hours_spent}
+              onCommit={(v) => updateDeal.mutate({ id: deal.id, patch: { hours_spent: v as number | null } })}
+            />
+            <SparadRad
+              label="Revisionsrundor"
+              hint="Hur många gånger de bad om ändringar."
+              type="number"
+              step={1}
+              value={deal.revision_rounds}
+              onCommit={(v) =>
+                updateDeal.mutate({ id: deal.id, patch: { revision_rounds: Math.max(0, (v as number | null) ?? 0) } })
+              }
+            />
           </div>
+
+          {deal.invoiced_on && deal.due_on && deal.due_on < deal.invoiced_on && (
+            <p className="text-body-md text-error">
+              Förfallodagen ligger före fakturadatumet, dubbelkolla gärna.
+            </p>
+          )}
+          {deal.invoiced_on && deal.paid_on && deal.paid_on < deal.invoiced_on && (
+            <p className="text-body-md text-error">
+              Betalningen är registrerad före fakturadatumet, dubbelkolla gärna.
+            </p>
+          )}
 
           {(profit !== null || hourly !== null) && (
             <div className="flex flex-wrap gap-6 border-t border-outline-variant/30 pt-4">
@@ -431,7 +403,7 @@ export default function DealDetail() {
       <div className="pt-4">
         <button
           onClick={() => {
-            if (confirm("Ta bort uppdraget? Leverabler och licenser försvinner med det.")) {
+            if (confirm("Ta bort uppdraget? Materialet och rättigheterna följer med.")) {
               deleteDeal.mutate(deal.id, { onSuccess: () => navigate("/uppdrag") });
             }
           }}
@@ -443,7 +415,7 @@ export default function DealDetail() {
 
       <Modal
         open={deliverableOpen || editing !== null}
-        title={editing ? "Ändra leverabel" : "Ny leverabel"}
+        title={editing ? "Ändra det du levererar" : "Lägg till något du levererar"}
         onClose={() => {
           setDeliverableOpen(false);
           setEditing(null);
@@ -640,5 +612,64 @@ function IconButton({
     >
       <Icon name={icon} size={18} />
     </button>
+  );
+}
+
+/**
+ * Ett fält som sparar när du lämnar det, inte vid varje tangenttryck.
+ *
+ * Tidigare sparade fälten på onChange, vilket betydde att "15000" skickade
+ * fem sparningar och lämnade 1, 15, 150, 1500 och 15000 efter sig. Tappade
+ * nätet mitt i blev 1 det sparade ordervärdet, och ingenting sa ifrån.
+ */
+function SparadRad({
+  label,
+  hint,
+  type = "text",
+  step,
+  value,
+  placeholder,
+  text,
+  onCommit,
+}: {
+  label: string;
+  hint?: string;
+  type?: string;
+  step?: number;
+  value: string | number | null;
+  placeholder?: string;
+  /** Fältet är text eller datum, alltså ska värdet inte tolkas som tal. */
+  text?: boolean;
+  onCommit: (value: string | number | null) => void;
+}) {
+  const [lokal, setLokal] = useState(value === null ? "" : String(value));
+
+  // Kommer ett nytt värde utifrån, till exempel efter att databasen stämplat
+  // ett datum vid statusbyte, ska fältet följa med.
+  useEffect(() => {
+    setLokal(value === null ? "" : String(value));
+  }, [value]);
+
+  return (
+    <Field label={label} hint={hint}>
+      <Input
+        type={type}
+        step={step}
+        min={type === "number" ? 0 : undefined}
+        placeholder={placeholder}
+        value={lokal}
+        onChange={(e) => setLokal(e.target.value)}
+        onBlur={() => {
+          const rensat = lokal.trim();
+          if (rensat === "") {
+            if (value !== null) onCommit(null);
+            return;
+          }
+          const nytt = text ? rensat : Number(rensat);
+          if (!text && Number.isNaN(nytt as number)) return;
+          if (nytt !== value) onCommit(nytt);
+        }}
+      />
+    </Field>
   );
 }

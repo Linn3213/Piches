@@ -7,7 +7,7 @@ import { useExclusivityGuard } from "@/hooks/useLicenses";
 import { useSettings } from "@/hooks/useSettings";
 import { extractBrief } from "@/lib/brief";
 import { computePrice } from "@/lib/pricing";
-import { formatMoney } from "@/lib/format";
+import { days, formatMoney } from "@/lib/format";
 import { CHANNEL_LABEL, FORMAT_LABEL, TERRITORY_LABEL } from "@/types/db";
 import { Badge, Button, Card, Field, Icon, Input, Select, Textarea } from "@/components/ui";
 
@@ -132,8 +132,8 @@ export function BriefImport({ onClose }: { onClose: () => void }) {
                 >
                   <Icon name="warning" filled size={18} />
                   <p className="text-body-md">
-                    Du är redan bunden inom {c.category} i {c.daysLeft} dagar till. Tackar du ja till
-                    det här bryter du det avtalet.
+                    Du är redan bunden inom {c.category} i {days(c.daysLeft)} till, så tackar du ja
+                    till det här bryter du det avtalet.
                   </p>
                 </div>
               ))}

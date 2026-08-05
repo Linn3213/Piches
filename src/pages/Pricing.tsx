@@ -78,14 +78,14 @@ export default function Pricing() {
     <div className="space-y-8">
       <PageHeader
         title="Prisräknare"
-        subtitle="Priset är rättigheterna, inte bara produktionen. Här ser du fördelningen."
+        subtitle="Priset är rättigheterna och inte bara produktionen, och här ser du exakt hur mycket av summan som är vad."
       />
 
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Underlag */}
         <div className="space-y-5 lg:col-span-3">
           <Card className="space-y-4">
-            <h2 className="text-headline-sm">Leverabler</h2>
+            <h2 className="text-headline-sm">Det du levererar</h2>
             {rows.map((row, i) => (
               <div key={i} className="flex gap-3">
                 <Select
@@ -187,7 +187,7 @@ export default function Pricing() {
           <Card className="glass sticky top-6 space-y-5 border-l-2 border-l-primary">
             <div className="flex items-center gap-2 text-primary">
               <Icon name="calculate" />
-              <h2 className="text-label-caps uppercase">Piches prislogik</h2>
+              <h2 className="text-label-caps uppercase">Så räknar vi</h2>
             </div>
 
             <ul className="space-y-3">

@@ -7,7 +7,7 @@ import { usePitches } from "@/hooks/usePitches";
 import { useTasks } from "@/hooks/useTasks";
 import { useStats } from "@/hooks/useStats";
 import { days, formatMoney, plural, relativeDays } from "@/lib/format";
-import { Badge, Card, Empty, Icon, Loading, Stat } from "@/components/ui";
+import { Badge, Button, Card, Empty, Icon, Loading, Stat } from "@/components/ui";
 import { Onboarding } from "@/components/Onboarding";
 import { WON_STATUSES } from "@/types/db";
 
@@ -33,7 +33,7 @@ type Action = {
  * missa saken, inte hur nyligen den dök upp.
  */
 export default function Dashboard() {
-  const { data: radar, isLoading: radarLoading } = useExpiryRadar();
+  const { data: radar, isLoading: radarLoading, error: radarError } = useExpiryRadar();
   const { data: licenses } = useLicenses();
   const { data: brands } = useBrands();
   const { data: pitches } = usePitches();
@@ -42,6 +42,9 @@ export default function Dashboard() {
   const renewals = useRenewalQueue();
   const economy = useEconomy();
 
+  // Utan det har sa sidan "Inget som brinner" nar sanningen var att vi inte
+  // nadde servern, vilket ar det farligaste beskedet appen kan ge.
+  if (radarError) return <p className="text-body-md text-error">Vi nådde inte servern just nu, prova att ladda om sidan.</p>;
   if (radarLoading) return <Loading />;
 
   const brandName = (id: string) => brands?.find((b) => b.id === id)?.name ?? "Okänt varumärke";
@@ -159,8 +162,13 @@ export default function Dashboard() {
           title="Inget som brinner"
           hint={
             wonCount === 0
-              ? "Inga sena fakturor och inga licenser på väg ut. Bra läge att skicka några pitchar."
+              ? "Inga sena fakturor och inga licenser på väg ut, så det är ett bra läge att lägga tid på nya kunder."
               : "Inga sena fakturor, inga licenser på väg ut och inga förfallna uppgifter."
+          }
+          action={
+            <Link to="/uppdrag">
+              <Button>Lägg upp ett nytt uppdrag</Button>
+            </Link>
           }
         />
       ) : (
@@ -211,7 +219,7 @@ export default function Dashboard() {
           tone={economy.money.overdue > 0 ? "danger" : undefined}
         />
         <Stat
-          label="Pitchar ute"
+          label="Uppdrag ute"
           value={String(stats?.pitchesSent ?? 0)}
           sub={`${stats?.pitchesSentLast30d ?? 0} senaste 30 dagarna`}
           icon="send"

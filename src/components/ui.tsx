@@ -96,13 +96,15 @@ export function Field({
     <label className="block space-y-2">
       <span className="text-label-caps uppercase text-on-surface-variant">{label}</span>
       {children}
-      {hint && <span className="block text-xs text-on-surface-variant/70">{hint}</span>}
+      {/* Utan alfa. Nedtonad till /70 landade hjalptexten pa 4,06:1 mot
+          kortytan, alltsa under kravet 4,5:1 for text under 18 px. */}
+      {hint && <span className="block text-xs text-outline">{hint}</span>}
     </label>
   );
 }
 
 const control =
-  "w-full rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/50 focus:border-primary";
+  "w-full rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none transition-colors placeholder:text-outline focus:border-primary";
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={clsx(control, className)} {...props} />;

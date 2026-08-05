@@ -97,9 +97,16 @@ export function buildInvoiceLines(
   const licensSumma = licenses.reduce((sum, l) => sum + (l.fee_sek ?? 0), 0);
   const total = deal.value_sek ?? 0;
 
-  // Ar licenserna prissatta var for sig blir uppdelningen exakt. Annars
-  // redovisas hela beloppet pa en rad, hellre an att hitta pa en fordelning.
-  const produktion = licensSumma > 0 && licensSumma <= total ? total - licensSumma : total;
+  // Uppdelningen går bara ihop när licenserna ryms i ordervärdet. Gör de inte
+  // det redovisas hela beloppet på en rad i stället, hellre än att hitta på en
+  // fördelning som inte summerar.
+  //
+  // Villkoret måste styra BÅDE produktionsraden och licensraderna. Tidigare
+  // styrde det bara produktionsraden, vilket gjorde att en affär på 10 000 med
+  // en licens på 12 000 fick en produktionsrad på 10 000 OCH en licensrad på
+  // 12 000, alltså 22 000 att betala på en affär värd 10 000.
+  const kanDelas = licensSumma > 0 && licensSumma <= total;
+  const produktion = kanDelas ? total - licensSumma : total;
 
   if (produktion > 0) {
     const spec = deliverables.length

@@ -73,7 +73,11 @@ export default function Tasks() {
       {isLoading ? (
         <p className="text-sm text-on-surface-variant">Laddar...</p>
       ) : !open.length && !done.length ? (
-        <Empty title="Inga uppgifter än" />
+        <Empty
+            icon="checklist"
+            title="Inga uppgifter än"
+            hint="Skriv in det du inte vill hålla i huvudet, så dyker det upp på Idag-listan när det närmar sig."
+          />
       ) : (
         <div className="space-y-6">
           {open.length > 0 && (
@@ -108,7 +112,9 @@ export default function Tasks() {
                       </span>
                     )}
                     <button
-                      onClick={() => del.mutate(task.id)}
+                      onClick={() => {
+                    if (confirm(`Ta bort "${task.title}"?`)) del.mutate(task.id);
+                  }}
                       aria-label="Ta bort"
                       className="shrink-0 text-on-surface-variant hover:text-error"
                     >

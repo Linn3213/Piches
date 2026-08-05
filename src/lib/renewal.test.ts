@@ -144,10 +144,19 @@ describe("förnyelsekön", () => {
     expect(isAlreadyHandled(l, [pitch("skickad", "annan-licens")])).toBe(false);
   });
 
-  it("tar upp licensen igen om förnyelseförsöket förlorades", () => {
+  it("tar upp licensen igen bara om förnyelseförsöket misslyckades", () => {
     const l = license();
     expect(isAlreadyHandled(l, [pitch("forlorad", "lic-1")])).toBe(false);
-    expect(isAlreadyHandled(l, [pitch("betalt", "lic-1")])).toBe(false);
+    expect(isAlreadyHandled(l, [pitch("ingen_respons", "lic-1")])).toBe(false);
+  });
+
+  it("tystnar för gott när förnyelsen är vunnen eller betald", () => {
+    // Tidigare rakades "betalt" in bland de avslutade och slappte darfor
+    // tillbaka licensen till kon i samma sekund som affaren blev klar, alltsa
+    // tjatade listan mer ju fardigare man var.
+    const l = license();
+    expect(isAlreadyHandled(l, [pitch("vunnen", "lic-1")])).toBe(true);
+    expect(isAlreadyHandled(l, [pitch("betalt", "lic-1")])).toBe(true);
   });
 
   it("sätter det som snart går ut före det som redan runnit ut", () => {

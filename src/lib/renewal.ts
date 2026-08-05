@@ -1,6 +1,6 @@
 import type { Brand, License, Pitch } from "@/types/db";
 import { daysUntilExpiry, parseDate } from "@/lib/rights";
-import { CLOSED_STATUSES } from "@/types/db";
+import type { PitchStatus } from "@/types/db";
 
 /**
  * Förnyelsemotorn.
@@ -16,10 +16,23 @@ import { CLOSED_STATUSES } from "@/types/db";
  * faktiskt går att motivera utan att argumentera.
  */
 
-/** En licens är redan omhändertagen om det finns en levande affär född ur den. */
+/**
+ * En licens är omhändertagen så snart det finns en förnyelseaffär som lever
+ * eller redan vunnits.
+ *
+ * Tidigare räknades bara LEVANDE affärer, och eftersom "betalt" ligger bland
+ * de avslutade blev logiken baklänges: i samma sekund som förnyelsen
+ * markerades betald dök den gamla licensen upp igen under "Att förnya" med
+ * texten "redan utgången", och låg sedan kvar för alltid. Ju färdigare affären
+ * var, desto mer tjatade listan.
+ *
+ * Bara ett misslyckat försök släpper licensen tillbaka till kön.
+ */
+const MISSLYCKAT: PitchStatus[] = ["forlorad", "ingen_respons"];
+
 export function isAlreadyHandled(license: License, pitches: Pitch[]): boolean {
   return pitches.some(
-    (p) => p.renewed_from_license_id === license.id && !CLOSED_STATUSES.includes(p.status),
+    (p) => p.renewed_from_license_id === license.id && !MISSLYCKAT.includes(p.status),
   );
 }
 

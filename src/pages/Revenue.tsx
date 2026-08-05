@@ -6,7 +6,7 @@ import { useBrands } from "@/hooks/useBrands";
 import { useEconomy } from "@/hooks/useEconomy";
 import { rightsRevenueByBrand } from "@/lib/rights";
 import { days, formatDateFull, formatMoney, plural } from "@/lib/format";
-import { Badge, Card, Empty, Icon, Loading, PageHeader, Stat } from "@/components/ui";
+import { Badge, Button, Card, Empty, Icon, Loading, PageHeader, Stat } from "@/components/ui";
 
 export default function Revenue() {
   const { data, isLoading, error } = useStats();
@@ -16,13 +16,14 @@ export default function Revenue() {
 
   const brandName = (id: string) => brands?.find((b) => b.id === id)?.name ?? "Okänt varumärke";
 
-  const rightsByBrand = useMemo(() => {
+  // Totalen maste summeras FORE kapningen, annars visar rubriken bara de sex
+  // storsta kundernas licensintakter men presenterar det som hela summan.
+  const rightsAll = useMemo(() => {
     if (!licenses || !brands) return [];
     const map = rightsRevenueByBrand(licenses);
     return [...map.entries()]
       .map(([brandId, total]) => ({ name: brandName(brandId), total }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 6);
+      .sort((a, b) => b.total - a.total);
     // brandName lases ur brands, som redan star i beroendelistan
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [licenses, brands]);
@@ -32,7 +33,8 @@ export default function Revenue() {
 
   const months = economy.revenueByMonth;
   const maxMonth = Math.max(1, ...months.map((m) => m.total));
-  const rightsTotal = rightsByBrand.reduce((sum, b) => sum + b.total, 0);
+  const rightsByBrand = rightsAll.slice(0, 6);
+  const rightsTotal = rightsAll.reduce((sum, b) => sum + b.total, 0);
   const maxBrand = Math.max(1, ...rightsByBrand.map((b) => b.total));
   const conc = economy.concentration;
   const maxBrandWon = Math.max(1, ...economy.byBrand.map((b) => b.won));
@@ -57,7 +59,7 @@ export default function Revenue() {
           value={economy.money.outstanding > 0 ? formatMoney(economy.money.outstanding) : "–"}
           sub={
             economy.avgDaysToPayment !== null
-              ? `betalas i snitt på ${Math.round(economy.avgDaysToPayment)} dagar`
+              ? `betalas i snitt på ${days(Math.round(economy.avgDaysToPayment))}`
               : "inte betalt än"
           }
           icon="schedule"
@@ -145,7 +147,7 @@ export default function Revenue() {
       {/* Pitchstatistik ------------------------------------------------------ */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat
-          label="Pitchar ute"
+          label="Uppdrag ute"
           value={String(data.pitchesSent)}
           sub={`${data.pitchesSentLast30d} senaste 30 dagarna`}
           icon="send"
@@ -190,7 +192,7 @@ export default function Revenue() {
         </div>
         {months.every((m) => m.total === 0) && (
           <p className="mt-4 text-body-md text-on-surface-variant">
-            Inga vunna affärer med belopp än.
+            Inga vunna uppdrag med belopp än.
           </p>
         )}
       </Card>
@@ -200,8 +202,8 @@ export default function Revenue() {
         <div className="mb-6">
           <h2 className="text-headline-sm">Vad varje kund är värd</h2>
           <p className="mt-1 text-body-md text-on-surface-variant">
-            Omsättning säger inte vilka kunder som är bra. Timpenningen gör det, och den syns bara
-            när du fyllt i nedlagd tid på uppdragen.
+            Omsättningen säger inte vilka kunder som faktiskt är bra, det gör timpenningen, och den
+            syns först när du fyllt i hur många timmar uppdraget tog.
           </p>
         </div>
 
@@ -279,7 +281,12 @@ export default function Revenue() {
           <Empty
             icon="gavel"
             title="Inga licensintäkter registrerade"
-            hint="Sätt ett belopp på licenserna så syns fördelningen här."
+            hint="Sätt ett belopp på licenserna, så syns fördelningen här."
+            action={
+              <Link to="/rattigheter">
+                <Button>Till rättigheterna</Button>
+              </Link>
+            }
           />
         ) : (
           <ul className="space-y-4">
@@ -306,7 +313,7 @@ export default function Revenue() {
       <p className="flex items-center justify-center gap-2 text-center text-xs text-on-surface-variant/70">
         <Icon name="info" size={14} />
         Alla belopp är exklusive moms. Bokföring och fakturering sköts i ditt bokföringssystem,
-        Piches äger affärslogiken och inte arkivet.
+        och själva bokföringen sköts i ditt bokföringssystem, här räknar vi bara på vad affärerna gav.
       </p>
     </div>
   );
