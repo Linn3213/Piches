@@ -6,7 +6,6 @@ import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { BrandForm } from "@/components/BrandForm";
 import { PitchForm } from "@/components/PitchForm";
 import { Button, Card, Field, Icon, Input, Modal } from "@/components/ui";
-import { DEFAULT_SETTINGS } from "@/types/db";
 
 /**
  * Första gången.
@@ -42,15 +41,11 @@ export function Onboarding() {
   const hasBrand = (brands?.length ?? 0) > 0;
   const hasDeal = (pitches?.length ?? 0) > 0;
 
-  // Priserna raknas som satta forst nar minst ett av dem skiljer sig fran
-  // startvardena. Skulle hennes riktiga priser rakat vara exakt startvardena
-  // blir steget bara staende obockat, vilket ar ofarligt. Det omvanda felet,
-  // att bocka av ett steg hon aldrig gjort, hade daremot gjort att hon aldrig
-  // satte sina priser alls.
-  const ratesDone =
-    settings.base_video_rate !== DEFAULT_SETTINGS.base_video_rate ||
-    settings.base_photo_rate !== DEFAULT_SETTINGS.base_photo_rate ||
-    settings.base_story_rate !== DEFAULT_SETTINGS.base_story_rate;
+  // Steget bockas av pa att hon FAKTISKT sparat priserna, inte pa att de
+  // rakar skilja sig fran startvardena. Med jamforelsen kunde den vars riktiga
+  // priser var exakt 4000/1500/1000 aldrig fa steget avbockat, och da dok
+  // knappen "Dolj guiden" aldrig upp.
+  const ratesDone = settings.rates_set_at !== null;
 
   const steps = [
     {
@@ -183,9 +178,14 @@ export function Onboarding() {
             e.preventDefault();
             updateSettings.mutate(
               {
-                base_video_rate: Number(video) || settings.base_video_rate,
-                base_photo_rate: Number(photo) || settings.base_photo_rate,
-                base_story_rate: Number(story) || settings.base_story_rate,
+                // Tomt falt betyder "ror inte", noll betyder noll. Med
+                // `Number(x) || fallback` blev 0 falsy och skrevs tillbaka till
+                // startvardet, sa den som inte tar betalt for stories aldrig
+                // kunde spara det.
+                base_video_rate: video === "" ? settings.base_video_rate : Number(video),
+                base_photo_rate: photo === "" ? settings.base_photo_rate : Number(photo),
+                base_story_rate: story === "" ? settings.base_story_rate : Number(story),
+                rates_set_at: new Date().toISOString(),
               },
               { onSuccess: () => setRatesOpen(false) },
             );

@@ -3,6 +3,7 @@ import type { Brand, License, Pitch, PitchStatus, Settings } from "@/types/db";
 import { DEFAULT_SETTINGS } from "@/types/db";
 import { actualHourlyRate, findLeaks, monthlyGoal, slowPayers } from "@/lib/profit";
 import { forecastProduct, suggestProducts } from "@/lib/product";
+import { economyByBrand } from "@/lib/economy";
 
 const IDAG = new Date(2026, 7, 5); // 5 aug 2026
 
@@ -218,15 +219,18 @@ describe("produktprognos", () => {
     expect(f.hourlyRate).toBeCloseTo(f.net / 64, 2);
   });
 
-  it("räknar in din egen tid i nollpunkten", () => {
+  it("räknar in ALL egen tid i nollpunkten, inte bara bygget", () => {
     const f = forecastProduct({ ...bas, buildCost: 5000 }, settings, 1400);
-    // (5000 + 40 * 1200) / 1995
-    expect(f.breakEvenUnits).toBe(Math.ceil(53000 / 1995));
+    // Timmarna ar 40 bygg + 2/man * 12 = 64, prissatta till den FAKTISKA
+    // timpenningen 1400 (samma som alternativkostnaden anvander), plus 5000
+    // i utlagg. Tidigare raknades bara byggtiden, sa en produkt med tung
+    // lopande skotsel sag billigare ut an den var.
+    expect(f.breakEvenUnits).toBe(Math.ceil((5000 + 64 * 1400) / 1995));
   });
 
   it("jämför mot vad samma tid gett som uppdrag", () => {
     const f = forecastProduct(bas, settings, 1400);
-    expect(f.dealsForgone).toBe(40 * 1400);
+    expect(f.opportunityCostSek).toBe(40 * 1400);
     expect(f.beatsFreelance).toBe(true);
   });
 
@@ -263,5 +267,120 @@ describe("produktförslag", () => {
   it("räknar på högre konvertering när listan är större än flödet", () => {
     const listbaserad = suggestProducts({ ...settings, audience_size: 100, email_list_size: 5000 }, 1400);
     expect(listbaserad[0].forecast.buyers).toBeGreaterThan(0);
+  });
+});
+
+
+describe("fynd ur granskningen, som tidigare gav fel siffror", () => {
+  it("räknar inte förlorade affärer i timpenningen", () => {
+    // En forlorad offert pa 100 000 kr som tog tre timmar gjorde att
+    // timpenningen sag ut att vara 9 000 kr i stallet for 1 800.
+    const r = actualHourlyRate([
+      pitch({ status: "betalt", value_sek: 20000, production_cost_sek: 2000, hours_spent: 10 }),
+      pitch({ status: "forlorad", value_sek: 100000, hours_spent: 3 }),
+    ]);
+    expect(r).toBe(1800);
+  });
+
+  it("räknar inte förlorade affärer i snittordervärdet", () => {
+    // Annars halverades antalet uppdrag som kravdes, och ju fler stora
+    // offerter hon forlorade desto lattare sag malet ut.
+    const g = monthlyGoal(
+      [
+        pitch({ status: "betalt", value_sek: 20000, paid_on: "2026-07-15" }),
+        pitch({ status: "forlorad", value_sek: 100000 }),
+      ],
+      settings,
+      IDAG,
+    );
+    expect(g.gap).toBe(30000);
+    expect(g.dealsNeeded).toBe(2);
+  });
+
+  it("blandar inte affärer med och utan ifyllda timmar i timpenningen", () => {
+    const rows = economyByBrand([
+      pitch({ brand_id: "b1", status: "betalt", value_sek: 10000, hours_spent: 20 }),
+      pitch({ brand_id: "b1", status: "betalt", value_sek: 30000 }),
+    ]);
+    // Bara den matta affaren far rakna: 10 000 / 20 h = 500 kr/h.
+    // Tidigare blev det (10000 + 30000) / 20 = 2 000 kr/h, och lackan tystnade.
+    expect(rows[0].hourlyRate).toBe(500);
+  });
+
+  it("larmar inte om tre affärer med en revisionsrunda var", () => {
+    const leaks = findLeaks({
+      pitches: [
+        pitch({ brand_id: "b1", status: "betalt", value_sek: 30000, hours_spent: 10, revision_rounds: 1 }),
+        pitch({ brand_id: "b1", status: "betalt", value_sek: 30000, hours_spent: 10, revision_rounds: 1 }),
+        pitch({ brand_id: "b1", status: "betalt", value_sek: 30000, hours_spent: 10, revision_rounds: 1 }),
+      ],
+      brands, licenses: [], settings, today: IDAG,
+    });
+    expect(leaks.some((l) => l.kind === "revisionstung")).toBe(false);
+  });
+
+  it("larmar när EN affär dragit över med flera rundor", () => {
+    const leaks = findLeaks({
+      pitches: [pitch({ brand_id: "b1", status: "betalt", value_sek: 30000, hours_spent: 10, revision_rounds: 4 })],
+      brands, licenses: [], settings, today: IDAG,
+    });
+    const l = leaks.find((x) => x.kind === "revisionstung");
+    expect(l).toBeDefined();
+    // 3 extra rundor a 2 timmar, till 3 000 kr/h.
+    expect(l!.amountSek).toBe(3 * 2 * 3000);
+  });
+
+  it("tjatar inte om en licens som redan förnyats", () => {
+    const leaks = findLeaks({
+      pitches: [pitch({ status: "betalt", value_sek: 18000, renewed_from_license_id: "l1" })],
+      brands,
+      licenses: [license({ id: "l1", fee_sek: 15000 })],
+      settings, today: IDAG,
+    });
+    expect(leaks.some((l) => l.kind === "outnyttjad_fornyelse")).toBe(false);
+  });
+
+  it("sätter inget kronbelopp på koncentrationsrisken", () => {
+    // Kundens omsattning ar inte en kostnad, och stod tidigare i rott under
+    // rubriken "Kostar dig".
+    const leaks = findLeaks({
+      pitches: [
+        pitch({ brand_id: "b1", status: "betalt", value_sek: 80000 }),
+        pitch({ brand_id: "b2", status: "betalt", value_sek: 20000 }),
+      ],
+      brands, licenses: [], settings, today: IDAG,
+    });
+    const l = leaks.find((x) => x.kind === "beroende_av_en_kund");
+    expect(l).toBeDefined();
+    expect(l!.amountSek).toBeNull();
+  });
+
+  it("räknar leveranstiden på det som levereras personligen", () => {
+    // Radgivning pastod 101 000 kr i timmen for att de 180 leveranstimmarna
+    // inte fanns i modellen.
+    const forslag = suggestProducts(settings, 1400);
+    const radgivning = forslag.find((s) => s.template.kind === "konsultation");
+    expect(radgivning).toBeDefined();
+    expect(radgivning!.forecast.hourlyRate).toBeLessThan(10000);
+    expect(radgivning!.forecast.hours).toBeGreaterThan(radgivning!.template.buildHours[0]);
+  });
+
+  it("låter aldrig en negativ timpenning bli jämförelse", () => {
+    // Ett uppdrag dar inkopen sprack gav -1 500 kr/h, och da slog VARJE
+    // tankbar produkt "dina uppdrag".
+    const daligt = actualHourlyRate([
+      pitch({ status: "vunnen", value_sek: 5000, production_cost_sek: 20000, hours_spent: 10 }),
+    ]);
+    expect(daligt).toBe(-1500);
+
+    const f = forecastProduct(
+      { price: 100, buildHours: 40, monthlyHours: 0, buildCost: 0, monthlyCost: 0,
+        conversionPct: 0.01, recurring: false, audience: 100 },
+      settings,
+      daligt,
+    );
+    // Jamforelsen faller tillbaka pa malet 1 200, inte pa -1 500.
+    expect(f.opportunityCostSek).toBe(40 * 1200);
+    expect(f.beatsFreelance).toBe(false);
   });
 });

@@ -1,5 +1,7 @@
 import type { Brand, Pitch, Settings } from "@/types/db";
-import { economyByBrand, isPaid, overdueInvoices } from "@/lib/economy";
+import { economyByBrand, isPaid, isWon, overdueInvoices } from "@/lib/economy";
+import { isAlreadyHandled } from "@/lib/renewal";
+import { plural } from "@/lib/format";
 import { daysBetween, parseDate } from "@/lib/rights";
 import type { License } from "@/types/db";
 import { licenseState } from "@/lib/rights";
@@ -84,15 +86,17 @@ export function findLeaks({
 
   // 2. Revisionstunga kunder. Varje extra runda ar tid du inte fakturerat.
   for (const row of perBrand) {
-    if (row.revisionRounds < 3) continue;
-    const extra = row.revisionRounds - 1;
+    // extraRevisions raknas per affar. Tre affarer med en runda var ar helt
+    // normalt och ska inte larma, medan en affar med fyra rundor ska.
+    if (row.extraRevisions < 2) continue;
+    const extra = row.extraRevisions;
     const kostnad = row.hourlyRate !== null ? extra * 2 * row.hourlyRate : null;
     leaks.push({
       kind: "revisionstung",
-      title: `${namn(row.brandId)} har begärt ${row.revisionRounds} revisionsrundor`,
+      title: `${namn(row.brandId)} har begärt ${plural(row.extraRevisions, "extra revisionsrunda", "extra revisionsrundor")}`,
       amountSek: kostnad,
       why: kostnad
-        ? `Räknat på ungefär två timmar per runda utöver den första är det ${kr(kostnad)} i arbete du inte fått betalt för.`
+        ? `Räknat på ungefär två timmar per runda är det ${kr(kostnad)} i arbete du inte fått betalt för.`
         : "Rundorna är arbete du inte fakturerat, men utan nedlagda timmar går kostnaden inte att räkna ut.",
       action:
         "Skriv in i offerten att två rundor ingår och att fler debiteras per timme. Det brukar räcka för att antalet ska sjunka av sig självt.",
@@ -135,8 +139,13 @@ export function findLeaks({
   }
 
   // 5. Utgangna licenser som aldrig fornyats.
+  // Redan omhandertagna licenser ska inte tjata har heller. Utan guarden
+  // sager Lonsamhet "skapa fornyelserna" och Rattigheter visar en tom lista,
+  // eftersom fornyelsekon filtrerar korrekt men den har inte gjorde det.
   const utgangna = licenses.filter(
-    (l) => licenseState(l, today, settings.renewal_lead_days) === "utgangen",
+    (l) =>
+      licenseState(l, today, settings.renewal_lead_days) === "utgangen" &&
+      !isAlreadyHandled(l, pitches),
   );
   if (utgangna.length > 0) {
     const varde = utgangna.reduce((s, l) => s + (l.fee_sek ?? 0), 0);
@@ -161,7 +170,9 @@ export function findLeaks({
       leaks.push({
         kind: "beroende_av_en_kund",
         title: `${Math.round(andel * 100)} procent av allt kommer från ${namn(storst.brandId)}`,
-        amountSek: storst.won,
+        // Inget belopp. Det har ar en RISK, inte en kostnad, och tidigare stod
+        // kundens hela omsattning under rubriken "Kostar dig" i rott.
+        amountSek: null,
         why: "Tappar du den kunden försvinner större delen av omsättningen samma månad, och att bygga upp en ersättare tar månader.",
         action: "Lägg undan tid varje vecka för att pitcha nya kunder, även när det är fullt upp.",
         severity: andel >= 0.65 ? "hog" : "medel",
@@ -197,7 +208,12 @@ export function findLeaks({
 
 /** Din faktiska timpenning över alla vunna affärer där tid är ifylld. */
 export function actualHourlyRate(pitches: Pitch[]): number | null {
-  const med = pitches.filter((p) => (p.hours_spent ?? 0) > 0 && p.value_sek !== null);
+  // isWon-filtret ar inte valfritt. En forlorad offert pa 100 000 kr som tog
+  // tre timmar gjorde annars att timpenningen sag ut att vara 9 000 kr, och
+  // den siffran styr bade malet och varje produktjamforelse.
+  const med = pitches.filter(
+    (p) => isWon(p) && (p.hours_spent ?? 0) > 0 && p.value_sek !== null,
+  );
   if (med.length === 0) return null;
   const timmar = med.reduce((s, p) => s + (p.hours_spent ?? 0), 0);
   const vinst = med.reduce((s, p) => s + (p.value_sek ?? 0) - (p.production_cost_sek ?? 0), 0);
@@ -241,7 +257,11 @@ export function monthlyGoal(
 
   const gap = Math.max(0, target - current);
 
-  const vunna = pitches.filter((p) => p.value_sek !== null && (p.value_sek ?? 0) > 0);
+  // Variabeln het redan "vunna" men filtrerade inte pa status, sa en forlorad
+  // storoffert drog upp snittet och halverade antalet uppdrag som kravdes.
+  const vunna = pitches.filter(
+    (p) => isWon(p) && p.value_sek !== null && (p.value_sek ?? 0) > 0,
+  );
   const snitt =
     vunna.length > 0 ? vunna.reduce((s, p) => s + (p.value_sek ?? 0), 0) / vunna.length : null;
   const timpenning = actualHourlyRate(pitches);

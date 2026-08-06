@@ -4,6 +4,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { Logo } from "@/components/Logo";
 import { Icon } from "@/components/ui";
 import { useExpiryRadar } from "@/hooks/useLicenses";
+import { BRAND_LABEL } from "@/lib/brand";
 
 const NAV = [
   { to: "/", label: "Idag", icon: "dashboard", end: true },
@@ -35,7 +36,12 @@ export function Layout() {
           <Logo size={36} />
           <div>
             <p className="text-headline-sm tracking-tight text-primary">Piches</p>
-            <p className="font-mono text-[10px] text-on-surface-variant">Koll på rättigheterna</p>
+            {/* Skinnen sätter färger och typsnitt via data-brand på <html>, men
+                avsändarraden måste komma härifrån. Standalone har ingen, då står
+                appen för sig själv. */}
+            <p className="font-mono text-[10px] text-on-surface-variant">
+              {BRAND_LABEL ?? "Koll på rättigheterna"}
+            </p>
           </div>
         </div>
 

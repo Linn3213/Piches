@@ -24,6 +24,12 @@ export type ProductTemplate = {
   /** Prisspann som brukar fungera på svensk marknad. */
   price: [number, number];
   monthlyHours: number;
+  /**
+   * Timmar per såld enhet. Avgörande för allt som levereras personligen:
+   * utan den påstod motorn att rådgivning gav 101 000 kronor i timmen, för
+   * att de 180 leveranstimmarna inte fanns i modellen.
+   */
+  hoursPerUnit: number;
   recurring: boolean;
   /** Varför den här formen passar, och vad den kräver. */
   fits: string;
@@ -36,6 +42,7 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
     buildHours: [5, 15],
     price: [149, 599],
     monthlyHours: 0,
+    hoursPerUnit: 0,
     recurring: false,
     fits: "Snabbast att bygga och kräver ingen support. Bra första produkt, eftersom du får testa om publiken köper något alls innan du lägger veckor på något stort.",
   },
@@ -45,6 +52,7 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
     buildHours: [15, 40],
     price: [199, 899],
     monthlyHours: 0,
+    hoursPerUnit: 0,
     recurring: false,
     fits: "Passar när du får samma fråga om och om igen. Skriv ner svaret en gång och sälj det i stället för att svara i DM.",
   },
@@ -54,6 +62,7 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
     buildHours: [30, 60],
     price: [995, 2995],
     monthlyHours: 2,
+    hoursPerUnit: 0,
     recurring: false,
     fits: "Ett avgränsat resultat, till exempel att komma igång med UGC. Kortare än en kurs och därför både snabbare att bygga och lättare att sälja.",
   },
@@ -63,6 +72,7 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
     buildHours: [80, 200],
     price: [2995, 12995],
     monthlyHours: 5,
+    hoursPerUnit: 0,
     recurring: false,
     fits: "Störst intäkt per köpare, men också störst risk. Bygg den först när du har sålt något mindre till samma publik och vet att de köper.",
   },
@@ -72,6 +82,7 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
     buildHours: [40, 100],
     price: [199, 599],
     monthlyHours: 12,
+    hoursPerUnit: 0,
     recurring: true,
     fits: "Ger förutsägbar intäkt varje månad, men kräver att du levererar något nytt löpande. Räkna med att en del faller ifrån varje månad.",
   },
@@ -81,6 +92,8 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
     buildHours: [10, 25],
     price: [495, 2495],
     monthlyHours: 0,
+    // Sjalva genomforandet, en gang per tillfalle.
+    hoursPerUnit: 0.2,
     recurring: false,
     fits: "Går att sälja innan den är byggd, vilket gör den till det billigaste sättet att testa om ett ämne håller.",
   },
@@ -90,6 +103,8 @@ export const PRODUCT_TEMPLATES: ProductTemplate[] = [
     buildHours: [2, 6],
     price: [995, 3500],
     monthlyHours: 0,
+    // Hela leveransen ar tid. Utan den har raknade motorn 101 000 kr/h.
+    hoursPerUnit: 1.5,
     recurring: false,
     fits: "Högst pris per timme men skalar inte, eftersom du fortfarande säljer tid. Bra för att ta reda på exakt vad folk behöver innan du bygger något större.",
   },
@@ -114,10 +129,13 @@ export type ProductForecast = {
   hours: number;
   /** Vad produkten gav dig per nedlagd timme. */
   hourlyRate: number | null;
-  /** Antal sålda som krävs för att täcka bygget, inklusive din tid. */
+  /**
+   * Antal som krävs för att täcka allt, inklusive din tid. För löpande
+   * produkter är enheten medlemsmånader, inte medlemmar.
+   */
   breakEvenUnits: number | null;
-  /** Hur många uppdrag samma byggtid hade kunnat ge i stället. */
-  dealsForgone: number | null;
+  /** Vad samma byggtid hade gett som vanliga uppdrag, i kronor. */
+  opportunityCostSek: number | null;
   /** Slår produkten din vanliga timpenning? */
   beatsFreelance: boolean | null;
   months: number;
@@ -135,6 +153,8 @@ export type ForecastInput = {
   audience: number;
   /** Andel som lämnar per månad, för löpande produkter. */
   monthlyChurnPct?: number;
+  /** Timmar per såld enhet, för det som levereras personligen. */
+  hoursPerUnit?: number;
 };
 
 /**
@@ -167,20 +187,28 @@ export function forecastProduct(
 
   const costs = input.buildCost + input.monthlyCost * months;
   const net = revenue - costs;
-  const hours = input.buildHours + input.monthlyHours * months;
+  const hours =
+    input.buildHours + input.monthlyHours * months + (input.hoursPerUnit ?? 0) * buyers;
 
   const hourlyRate = hours > 0 ? net / hours : null;
 
   // Nollpunkten raknar in din egen tid till maltimpenningen, inte bara
   // utlagg. Annars ser en produkt som atgick tre veckor ut som gratis.
-  const egenTidsKostnad = input.buildHours * settings.target_hourly_rate;
-  const breakEvenUnits =
-    input.price > 0 ? Math.ceil((input.buildCost + egenTidsKostnad) / input.price) : null;
+  // Jamforelsetimpenningen satts forst, sa att nollpunkten och
+  // alternativkostnaden prissatter samma timme till samma belopp. Negativ
+  // timpenning (en affar dar inkopen sprack) far aldrig bli jamforelse,
+  // annars slar varje tankbar produkt "dina uppdrag".
+  const jamforelseTimpenning =
+    actualHourly !== null && actualHourly > 0 ? actualHourly : settings.target_hourly_rate;
 
-  // Vad samma byggtid hade gett som vanliga uppdrag.
-  const jamforelseTimpenning = actualHourly ?? settings.target_hourly_rate;
-  const dealsForgone = jamforelseTimpenning > 0 ? input.buildHours * jamforelseTimpenning : null;
+  // Nollpunkten raknar in ALL egen tid och alla lopande kostnader, inte bara
+  // bygget. For en lopande produkt ar enheten dessutom manader, inte kunder.
+  const egenTidsKostnad = hours * jamforelseTimpenning;
+  const totalKostnad = costs + egenTidsKostnad;
+  const breakEvenUnits = input.price > 0 ? Math.ceil(totalKostnad / input.price) : null;
 
+  const opportunityCostSek =
+    jamforelseTimpenning > 0 ? input.buildHours * jamforelseTimpenning : null;
   return {
     buyers,
     revenue,
@@ -189,7 +217,7 @@ export function forecastProduct(
     hours,
     hourlyRate,
     breakEvenUnits,
-    dealsForgone,
+    opportunityCostSek,
     beatsFreelance: hourlyRate === null ? null : hourlyRate > jamforelseTimpenning,
     months,
   };
@@ -253,6 +281,7 @@ export function suggestProducts(
         price,
         buildHours,
         monthlyHours: t.monthlyHours,
+        hoursPerUnit: t.hoursPerUnit,
         buildCost: 0,
         monthlyCost: 0,
         conversionPct: konvertering,

@@ -650,12 +650,21 @@ function SparadRad({
     setLokal(value === null ? "" : String(value));
   }, [value]);
 
+  // Sifferfält körs som text med inputMode, inte som type="number".
+  //
+  // Anledningen är att webbläsaren enligt specen tömmer ett number-fält så
+  // fort innehållet inte är ett giltigt flyttal. Skriver hon "7,5" med svenskt
+  // decimalkomma, eller börjar med ett minustecken, kommer alltså tom sträng
+  // ut ur fältet. Med den gamla koden tolkades det som "hon rensade fältet"
+  // och de tjugo nedlagda timmarna raderades tyst när hon klickade vidare.
+  const arSiffra = !text && type !== "date";
+
   return (
     <Field label={label} hint={hint}>
       <Input
-        type={type}
+        type={arSiffra ? "text" : type}
+        inputMode={arSiffra ? "decimal" : undefined}
         step={step}
-        min={type === "number" ? 0 : undefined}
         placeholder={placeholder}
         value={lokal}
         onChange={(e) => setLokal(e.target.value)}
@@ -665,8 +674,18 @@ function SparadRad({
             if (value !== null) onCommit(null);
             return;
           }
-          const nytt = text ? rensat : Number(rensat);
-          if (!text && Number.isNaN(nytt as number)) return;
+          if (!arSiffra) {
+            if (rensat !== value) onCommit(rensat);
+            return;
+          }
+          // Svenskt decimalkomma är det man faktiskt skriver.
+          const nytt = Number(rensat.replace(/\s/g, "").replace(",", "."));
+          if (Number.isNaN(nytt) || nytt < 0) {
+            // Obegripligt eller negativt: lämna serverns värde ifred och
+            // ställ tillbaka fältet, hellre än att spara något fel.
+            setLokal(value === null ? "" : String(value));
+            return;
+          }
           if (nytt !== value) onCommit(nytt);
         }}
       />

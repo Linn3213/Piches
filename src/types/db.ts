@@ -298,6 +298,8 @@ export type Settings = {
   renewal_uplift_pct: number;
   /** Satt när komigång-guiden är avklarad eller bortvald. */
   onboarded_at: string | null;
+  /** Satt när hon faktiskt sparat sina grundpriser första gången. */
+  rates_set_at: string | null;
   // Avsandaruppgifter for avtal och fakturor (0005).
   company_name: string | null;
   company_orgnr: string | null;
@@ -342,6 +344,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   renewal_lead_days: 30,
   renewal_uplift_pct: 15,
   onboarded_at: null,
+  rates_set_at: null,
   // Foretagsuppgifterna fylls i av anvandaren, de gar inte att gissa.
   company_name: null,
   company_orgnr: null,

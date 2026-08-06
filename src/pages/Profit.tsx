@@ -4,18 +4,22 @@ import { useBrands } from "@/hooks/useBrands";
 import { usePitches } from "@/hooks/usePitches";
 import { useLicenses } from "@/hooks/useLicenses";
 import { useSettings } from "@/hooks/useSettings";
-import { useCreateProduct, useDeleteProduct, useProducts } from "@/hooks/useProducts";
+import { useCreateProduct, useDeleteProduct, useProducts, useUpdateProduct } from "@/hooks/useProducts";
 import { actualHourlyRate, findLeaks, monthlyGoal, slowPayers, type Leak } from "@/lib/profit";
 import {
   CONVERSION_BENCHMARKS,
   forecastFromProduct,
   forecastProduct,
-  PRODUCT_TEMPLATES,
   suggestProducts,
   type ProductTemplate,
 } from "@/lib/product";
 import { days, formatMoney, plural } from "@/lib/format";
-import { PRODUCT_KIND_LABEL, PRODUCT_STATUS_LABEL, type Product } from "@/types/db";
+import {
+  PRODUCT_KIND_LABEL,
+  PRODUCT_STATUS_LABEL,
+  type Product,
+  type ProductStatus,
+} from "@/types/db";
 import {
   Badge, Button, Card, Empty, Field, Icon, Input, Loading, Modal, PageHeader, Select, Stat,
 } from "@/components/ui";
@@ -40,6 +44,7 @@ export default function Profit() {
   const { data: products } = useProducts();
   const createProduct = useCreateProduct();
   const deleteProduct = useDeleteProduct();
+  const updateProduct = useUpdateProduct();
 
   const [raknarePa, setRaknarePa] = useState<ProductTemplate | null>(null);
 
@@ -99,7 +104,7 @@ export default function Profit() {
           tone={laktSumma > 0 ? "danger" : undefined}
         />
         <Stat
-          label="Kvar till månadsmålet"
+          label="Kvar, mot förra månaden"
           value={mal.gap > 0 ? formatMoney(mal.gap) : "nått"}
           sub={
             mal.dealsNeeded !== null && mal.gap > 0
@@ -307,6 +312,7 @@ export default function Profit() {
                 <ProductRow
                   product={p}
                   forecast={forecastFromProduct(p, settings, timpenning)}
+                  onUpdate={(patch) => updateProduct.mutate({ id: p.id, patch })}
                   onDelete={() => {
                     if (confirm(`Ta bort ${p.name}?`)) deleteProduct.mutate(p.id);
                   }}
@@ -368,45 +374,110 @@ function ProductRow({
   product,
   forecast,
   onDelete,
+  onUpdate,
 }: {
   product: Product;
   forecast: ReturnType<typeof forecastFromProduct>;
   onDelete: () => void;
+  onUpdate: (patch: { status?: ProductStatus; units_sold?: number; revenue_sek?: number }) => void;
 }) {
+  const [oppen, setOppen] = useState(false);
+  const [salda, setSalda] = useState(String(product.units_sold || ""));
+  const [intakt, setIntakt] = useState(String(product.revenue_sek || ""));
+
+  // Utfallet slår alltid uppskattningen. Fram tills det finns är prognosen
+  // det bästa vi har, men den ska aldrig konkurrera med en verklig siffra.
   const harUtfall = product.units_sold > 0 || product.revenue_sek > 0;
+
   return (
-    <Card className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-headline-sm text-on-surface">{product.name}</p>
-          <Badge>{PRODUCT_KIND_LABEL[product.kind]}</Badge>
-          <Badge tone={product.status === "lanserad" ? "primary" : "neutral"}>
-            {PRODUCT_STATUS_LABEL[product.status]}
-          </Badge>
-        </div>
-        <p className="mt-1.5 text-body-md text-on-surface-variant">
-          {formatMoney(product.price_sek)}
-          {product.recurring ? " per månad" : " per köp"}, {days(0).replace("0 dag", "")}
-          {product.build_hours} timmar att bygga
-        </p>
-      </div>
-      <div className="flex shrink-0 items-start gap-4 sm:flex-col sm:items-end">
-        <div className="sm:text-right">
-          <p className="text-label-caps uppercase text-on-surface-variant">
-            {harUtfall ? "Hittills" : "Uppskattat på ett år"}
-          </p>
-          <p className="font-mono text-xl text-on-surface">
-            {harUtfall ? formatMoney(product.revenue_sek) : formatMoney(Math.round(forecast.net))}
+    <Card className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-headline-sm text-on-surface">{product.name}</p>
+            <Badge>{PRODUCT_KIND_LABEL[product.kind]}</Badge>
+          </div>
+          <p className="mt-1.5 text-body-md text-on-surface-variant">
+            {formatMoney(product.price_sek)}
+            {product.recurring ? " per månad" : " per köp"},{" "}
+            {plural(product.build_hours, "timme", "timmar")} att bygga
           </p>
         </div>
-        <button
-          onClick={onDelete}
-          aria-label="Ta bort produkten"
-          className="grid h-10 w-10 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
-        >
-          <Icon name="delete" size={18} />
-        </button>
+        <div className="flex shrink-0 items-start gap-4 sm:flex-col sm:items-end">
+          <div className="sm:text-right">
+            <p className="text-label-caps uppercase text-on-surface-variant">
+              {harUtfall ? "Hittills" : "Uppskattat på ett år"}
+            </p>
+            <p className="font-mono text-xl text-on-surface">
+              {harUtfall ? formatMoney(product.revenue_sek) : formatMoney(Math.round(forecast.net))}
+            </p>
+            {harUtfall && (
+              <p className="font-mono text-[11px] text-on-surface-variant">
+                {plural(product.units_sold, "såld", "sålda")}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setOppen((v) => !v)}
+              aria-label="Ändra produkten"
+              className="grid h-10 w-10 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
+            >
+              <Icon name={oppen ? "expand_less" : "edit"} size={18} />
+            </button>
+            <button
+              onClick={onDelete}
+              aria-label="Ta bort produkten"
+              className="grid h-10 w-10 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+            >
+              <Icon name="delete" size={18} />
+            </button>
+          </div>
+        </div>
       </div>
+
+      {oppen && (
+        <div className="grid gap-3 border-t border-outline-variant/30 pt-4 sm:grid-cols-3">
+          <Field label="Var den står">
+            <Select
+              value={product.status}
+              onChange={(e) => onUpdate({ status: e.target.value as ProductStatus })}
+            >
+              {(Object.keys(PRODUCT_STATUS_LABEL) as ProductStatus[]).map((s) => (
+                <option key={s} value={s}>
+                  {PRODUCT_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Antal sålda" hint="Verkligt utfall slår uppskattningen.">
+            <Input
+              inputMode="numeric"
+              value={salda}
+              onChange={(e) => setSalda(e.target.value)}
+              onBlur={() => {
+                const n = Number(salda.replace(/\s/g, ""));
+                if (!Number.isNaN(n) && n >= 0 && n !== product.units_sold) {
+                  onUpdate({ units_sold: n });
+                }
+              }}
+            />
+          </Field>
+          <Field label="Intäkt hittills, kronor">
+            <Input
+              inputMode="decimal"
+              value={intakt}
+              onChange={(e) => setIntakt(e.target.value)}
+              onBlur={() => {
+                const n = Number(intakt.replace(/\s/g, "").replace(",", "."));
+                if (!Number.isNaN(n) && n >= 0 && n !== product.revenue_sek) {
+                  onUpdate({ revenue_sek: n });
+                }
+              }}
+            />
+          </Field>
+        </div>
+      )}
     </Card>
   );
 }
@@ -545,4 +616,3 @@ function ProductCalculator({
   );
 }
 
-export { PRODUCT_TEMPLATES };

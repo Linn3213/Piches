@@ -137,9 +137,13 @@ export type BrandEconomy = {
   cost: number;
   hours: number;
   profit: number;
+  /** Vinst enbart på de affärer där tid är ifylld. Nämnaren till hourlyRate. */
+  profitWithHours: number;
   /** null när timmarna inte är ifyllda, aldrig 0 — noll timmar vore en lögn. */
   hourlyRate: number | null;
   revisionRounds: number;
+  /** Rundor utöver den första, summerat per affär. */
+  extraRevisions: number;
 };
 
 export function economyByBrand(pitches: Pitch[]): BrandEconomy[] {
@@ -157,23 +161,37 @@ export function economyByBrand(pitches: Pitch[]): BrandEconomy[] {
         cost: 0,
         hours: 0,
         profit: 0,
+        profitWithHours: 0,
         hourlyRate: null,
         revisionRounds: 0,
+        extraRevisions: 0,
       } satisfies BrandEconomy);
 
     row.deals += 1;
     row.won += p.value_sek ?? 0;
     if (isPaid(p)) row.paid += p.value_sek ?? 0;
     row.cost += p.production_cost_sek ?? 0;
-    row.hours += p.hours_spent ?? 0;
-    row.profit += dealProfit(p) ?? 0;
     row.revisionRounds += p.revision_rounds ?? 0;
+
+    // Timpenningen raknas BARA over affarer dar tiden faktiskt ar ifylld.
+    // Annars hamnar vinsten fran en affar utan timmar i taljaren medan
+    // namnaren star still, och da ser kunden battre ut ju fler affarer man
+    // glomt fylla i tid pa.
+    if ((p.hours_spent ?? 0) > 0) {
+      row.hours += p.hours_spent ?? 0;
+      row.profitWithHours += dealProfit(p) ?? 0;
+    }
+    row.profit += dealProfit(p) ?? 0;
+
+    // Extra revisionsrundor utover den forsta, per affar. Summan over
+    // affarer sager inget om huruvida NAGON enskild affar drog over.
+    row.extraRevisions += Math.max(0, (p.revision_rounds ?? 0) - 1);
 
     map.set(p.brand_id, row);
   }
 
   for (const row of map.values()) {
-    row.hourlyRate = row.hours > 0 ? row.profit / row.hours : null;
+    row.hourlyRate = row.hours > 0 ? row.profitWithHours / row.hours : null;
   }
 
   return [...map.values()].sort((a, b) => b.won - a.won);
