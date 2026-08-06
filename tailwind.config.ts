@@ -43,6 +43,11 @@ export default {
         terracotta: "rgb(var(--c-terracotta) / <alpha-value>)",
         sand: "rgb(var(--c-sand) / <alpha-value>)",
         forest: "rgb(var(--c-forest) / <alpha-value>)",
+        // Textfärgen under ett eget namn. Korten använder hover:border-ink/25
+        // för att markera att raden går att klicka på, och utan den här raden
+        // finns klassen inte och hovern gör ingenting alls. Pekar på samma
+        // variabel som on-surface, så alla tre husen har den redan.
+        ink: "rgb(var(--c-on-surface) / <alpha-value>)",
       },
       borderRadius: {
         DEFAULT: "0.75rem",
@@ -68,8 +73,8 @@ export default {
         "label-caps": ["12px", { lineHeight: "1", letterSpacing: "0.05em", fontWeight: "700" }],
       },
       boxShadow: {
+        // Neutral svart skugga, alltså samma i alla tre husen.
         soft: "0 4px 20px -2px rgba(0,0,0,0.05), 0 0 3px rgba(0,0,0,0.02)",
-        glow: "0 0 15px rgba(63,105,78,0.08)",
       },
     },
   },
