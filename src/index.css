@@ -2,6 +2,139 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   TRE LAGER, EN KODBAS
+
+   :root                          = Piches egen identitet (STANDALONE).
+                                    Värdena är originalets hex, omskrivna till
+                                    RGB-kanaler så att Tailwinds opacitets-
+                                    modifierare (bg-primary/90) fungerar.
+                                    RÖR ALDRIG dessa för att fixa en skin.
+   :root[data-brand="essensia"]   = pålagt skogsgrönt/linne
+   :root[data-brand="linnartistry"] = pålagt cream/espresso
+
+   Attributet sätts av vite-pluginet "piches-brand-html" vid bygget.
+   ============================================================ */
+:root {
+  --c-primary: 63 105 78;                    /* #3f694e */
+  --c-on-primary: 255 255 255;               /* #ffffff */
+  --c-primary-container: 192 239 208;        /* #c0efd0 */
+  --c-on-primary-container: 0 33 15;         /* #00210f */
+  --c-secondary: 79 99 83;                   /* #4f6353 */
+  --c-secondary-container: 209 232 212;      /* #d1e8d4 */
+  --c-on-secondary-container: 12 31 19;      /* #0c1f13 */
+  --c-tertiary: 58 101 111;                  /* #3a656f */
+  --c-tertiary-container: 190 234 246;       /* #beeaf6 */
+  --c-on-tertiary-container: 0 31 38;        /* #001f26 */
+  --c-error: 186 26 26;                      /* #ba1a1a */
+  --c-on-error: 255 255 255;                 /* #ffffff */
+  --c-error-container: 255 218 214;          /* #ffdad6 */
+  --c-on-error-container: 65 0 2;            /* #410002 */
+  --c-background: 251 249 246;               /* #fbf9f6 */
+  --c-on-background: 25 28 26;               /* #191c1a */
+  --c-surface: 251 249 246;                  /* #fbf9f6 */
+  --c-on-surface: 25 28 26;                  /* #191c1a */
+  --c-on-surface-variant: 64 73 67;          /* #404943 */
+  --c-outline: 112 121 115;                  /* #707973 */
+  --c-outline-variant: 191 201 192;          /* #bfc9c0 */
+  --c-surface-container-lowest: 255 255 255; /* #ffffff */
+  --c-surface-container-low: 245 243 240;    /* #f5f3f0 */
+  --c-surface-container: 239 237 234;        /* #efedea */
+  --c-surface-container-high: 233 231 228;   /* #e9e7e4 */
+  --c-surface-container-highest: 227 226 222;/* #e3e2de */
+  --c-sage: 143 160 138;                     /* #8fa08a */
+  --c-terracotta: 214 138 115;               /* #d68a73 */
+  --c-sand: 216 194 157;                     /* #d8c29d */
+  --c-forest: 74 107 71;                     /* #4a6b47 */
+
+  /* Glasytan följer bakgrunden, annars blir den fel i ett pålagt skin. */
+  --c-glass: 251 249 246;
+
+  /* Brödtextens font. Siffror kör alltid JetBrains Mono, i alla hus, för
+     att tabeller och belopp ska ligga i kolumn. */
+  --font-sans: "Syne", system-ui, sans-serif;
+}
+
+/* --- ESSENSIA: skogsgrön, linne, bär --- */
+:root[data-brand="essensia"] {
+  --c-primary: 6 52 50;                      /* #063432 djup skogsgrön */
+  --c-on-primary: 246 241 233;               /* #f6f1e9 linne */
+  --c-primary-container: 201 222 212;        /* #c9ded4 */
+  --c-on-primary-container: 4 35 31;         /* #04231f */
+  --c-secondary: 93 111 108;                 /* #5d6f6c salvia */
+  --c-secondary-container: 237 227 213;      /* #ede3d5 ljust linne */
+  --c-on-secondary-container: 11 74 69;      /* #0b4a45 */
+  --c-tertiary: 122 31 61;                   /* #7a1f3d bär */
+  --c-tertiary-container: 232 180 200;       /* #e8b4c8 ljusrosa */
+  --c-on-tertiary-container: 61 15 30;       /* #3d0f1e */
+  --c-background: 246 241 233;               /* #f6f1e9 */
+  --c-on-background: 22 32 31;               /* #16201f */
+  --c-surface: 246 241 233;
+  --c-on-surface: 22 32 31;
+  --c-on-surface-variant: 74 85 81;          /* #4a5551 */
+  --c-outline: 138 128 120;                  /* #8a8078 */
+  --c-outline-variant: 214 205 192;          /* #d6cdc0 */
+  --c-surface-container-lowest: 255 253 249; /* #fffdf9 */
+  --c-surface-container-low: 242 236 226;    /* #f2ece2 */
+  --c-surface-container: 237 230 218;        /* #ede6da */
+  --c-surface-container-high: 231 223 210;   /* #e7dfd2 */
+  --c-surface-container-highest: 225 216 202;/* #e1d8ca */
+  --c-sage: 93 111 108;
+  --c-terracotta: 168 88 63;                 /* #a8583f */
+  --c-sand: 216 194 157;
+  --c-forest: 11 74 69;                      /* #0b4a45 */
+  --c-glass: 246 241 233;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+}
+
+/* --- LINNARTISTRY: cream, espresso, guld --- */
+:root[data-brand="linnartistry"] {
+  --c-primary: 92 58 58;                     /* #5c3a3a espresso */
+  --c-on-primary: 247 242 234;               /* #f7f2ea */
+  --c-primary-container: 230 211 200;        /* #e6d3c8 */
+  --c-on-primary-container: 42 23 23;        /* #2a1717 */
+  --c-secondary: 138 111 92;                 /* #8a6f5c */
+  --c-secondary-container: 233 216 180;      /* #e9d8b4 champagne */
+  --c-on-secondary-container: 58 42 28;      /* #3a2a1c */
+  --c-tertiary: 201 166 120;                 /* #c9a678 guld */
+  --c-tertiary-container: 240 226 200;       /* #f0e2c8 */
+  --c-on-tertiary-container: 61 47 24;       /* #3d2f18 */
+  --c-background: 234 225 215;               /* #EAE1D7 cream */
+  --c-on-background: 42 31 26;               /* #2a1f1a */
+  --c-surface: 234 225 215;
+  --c-on-surface: 42 31 26;
+  --c-on-surface-variant: 90 75 66;          /* #5a4b42 */
+  /* Gränslinjer mot cream. #9a8578 låg på 2,71 mot bakgrunden och klarade
+     inte kravet på 3:1 för ytor som inte är text. Nedmörkad i samma varma
+     nyans till 3,54 mot surface och 3,06 mot den mörkaste ytan. */
+  --c-outline: 132 114 103;                  /* #847267 */
+  --c-outline-variant: 211 196 182;          /* #d3c4b6 */
+  --c-surface-container-lowest: 251 247 241; /* #fbf7f1 */
+  --c-surface-container-low: 242 235 226;    /* #f2ebe2 */
+  --c-surface-container: 236 227 216;        /* #ece3d8 */
+  --c-surface-container-high: 229 218 206;   /* #e5dace */
+  --c-surface-container-highest: 222 209 195;/* #ded1c3 */
+  --c-sage: 154 133 120;
+  --c-terracotta: 176 125 99;                /* #b07d63 */
+  --c-sand: 233 216 180;
+  --c-forest: 92 58 58;
+  --c-glass: 234 225 215;
+  --font-sans: "Quicksand", system-ui, sans-serif;
+}
+
+/* Husens rubrikfont. Standalone får ingen regel alls och behåller Syne
+   överallt, precis som förut. */
+:root[data-brand="essensia"] h1,
+:root[data-brand="essensia"] h2,
+:root[data-brand="essensia"] h3 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+}
+:root[data-brand="linnartistry"] h1,
+:root[data-brand="linnartistry"] h2,
+:root[data-brand="linnartistry"] h3 {
+  font-family: "Playfair Display", Georgia, serif;
+}
+
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
@@ -31,7 +164,7 @@
 @layer utilities {
   /* Glasytan som Stitch använder på AI-panelerna. */
   .glass {
-    background: rgba(251, 249, 246, 0.75);
+    background: rgb(var(--c-glass) / 0.75);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }

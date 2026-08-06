@@ -16,7 +16,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
+        {/* Bygget kan ligga i en underkatalog (app.essensiadesign.se/piches/).
+            BASE_URL är "/" för standalone och ändrar då ingenting. */}
+        <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <App />
         </BrowserRouter>
       </QueryClientProvider>

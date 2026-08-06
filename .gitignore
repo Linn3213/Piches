@@ -6,3 +6,8 @@ dist-ssr
 .env.local
 .DS_Store
 piches-dist.zip
+
+# Byggpaket (byggs om vid behov)
+*.zip
+dist-essensia
+dist-linnartistry

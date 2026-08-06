@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:essensia": "vite --mode essensia",
+    "dev:linnartistry": "vite --mode linnartistry",
+    "build:essensia": "tsc --noEmit && vite build --mode essensia",
+    "build:linnartistry": "tsc --noEmit && vite build --mode linnartistry",
+    "build:all": "npm run build && npm run build:essensia && npm run build:linnartistry"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.0",
