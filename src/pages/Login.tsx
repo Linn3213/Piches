@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/auth/AuthProvider";
 import { Button, Field, Input } from "@/components/ui";
 import { Logo } from "@/components/Logo";
+import { authRedirectUrl } from "@/auth/magicLink";
 
 export default function Login() {
   const { session, loading } = useAuth();
@@ -19,15 +20,25 @@ export default function Login() {
     setBusy(true);
     setError(null);
 
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: window.location.origin },
-    });
+    try {
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: authRedirectUrl(window.location.origin, import.meta.env.BASE_URL),
+        },
+      });
 
-    setBusy(false);
-    // Tekniska fel far aldrig na anvandaren rakt av.
-    if (authError) setError("Det gick inte att skicka länken. Kontrollera adressen och försök igen.");
-    else setSent(true);
+      // Tekniska fel får aldrig nå användaren rakt av.
+      if (authError) {
+        setError("Det gick inte att skicka länken. Kontrollera adressen och försök igen.");
+      } else {
+        setSent(true);
+      }
+    } catch {
+      setError("Det gick inte att skicka länken. Försök igen om en stund.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
