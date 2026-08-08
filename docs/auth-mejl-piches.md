@@ -1,7 +1,7 @@
 # Piches auth-mejl i det delade Supabase-projektet
 
-Piches använder `signInWithOtp`, men användarflödet har inget kodfält. Mejlet
-måste därför innehålla en klickbar verifieringslänk, inte bara en sexsiffrig kod.
+Piches använder `signInWithOtp`. Mejlet ska i första hand innehålla en klickbar
+verifieringslänk och dessutom en sexsiffrig reservkod som kan anges i appen.
 
 ## Lokal källkod
 
@@ -16,8 +16,8 @@ säkerhets- och leveransfixar.
 
 Piches-grenen är additiv och väljs när `redirect_to` eller `site_url` innehåller
 `piches`. Den bygger verifieringslänken från hook-payloadens `token_hash`,
-`email_action_type` och `redirect_to`. Om `token_hash` saknas stoppas utskicket i
-stället för att skicka en kod som Piches inte kan ta emot.
+`email_action_type` och `redirect_to`, och visar samtidigt hook-payloadens kod.
+Om `token_hash` saknas stoppas utskicket eftersom länken är huvudvägen.
 
 ## Det som måste göras i Supabase Dashboard
 
@@ -43,7 +43,8 @@ Projekt: det delade projektet som Piches redan använder.
    - `https://linnartistry.se/piches/**`
 6. Skicka en ny inloggningslänk från Piches och verifiera ett riktigt mottaget
    mejl: Piches som avsändare/varumärke, ämnesrad med "inloggningslänk", knappen
-   **Öppna Piches**, och återkomst till samma Piches-adress som startade flödet.
+   **Öppna Piches**, en sexsiffrig reservkod och återkomst till samma
+   Piches-adress som startade flödet.
 
 En lyckad funktionslogg eller HTTP 200 bevisar inte att mejlet kom fram. Flödet
 är klart först när ett skarpt mejl har mottagits och länken har skapat en session.

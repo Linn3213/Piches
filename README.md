@@ -54,9 +54,10 @@ av reglerna, som den här appen följer:
   över en funktion en annan produkt äger.
 - RLS `auth.uid() = user_id` på varenda tabell.
 
-Auth-mejl (magic link) går via projektets befintliga Hostinger-SMTP och den
-delade `auth-email-hook`. Hooken måste ha en egen Piches-gren; annars faller
-utskicket tillbaka till Studio L.A:s kodmall trots att Piches väntar på en länk.
+Auth-mejl går via projektets befintliga Hostinger-SMTP och den delade
+`auth-email-hook`. Hooken måste ha en egen Piches-gren; annars faller utskicket
+tillbaka till Studio L.A:s mall. Piches tar emot både den primära
+inloggningslänken och en sexsiffrig reservkod.
 Se `docs/auth-mejl-piches.md` för den lokala källan och dashboardkontrollen.
 
 ## Kom igång lokalt
