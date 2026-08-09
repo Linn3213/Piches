@@ -1,19 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/auth/AuthProvider";
 import { Button, Field, Input } from "@/components/ui";
 import { Logo } from "@/components/Logo";
-import { authRedirectUrl } from "@/auth/magicLink";
+import {
+  authCallbackError,
+  authRedirectUrl,
+  verifyEmailOtp,
+} from "@/auth/magicLink";
 
 export default function Login() {
   const { session, loading } = useAuth();
+  const [initialAuthError] = useState(() => authCallbackError(window.location.href));
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialAuthError);
+
+  useEffect(() => {
+    if (!initialAuthError) return;
+
+    // Ta bort Supabases authfel ur adressfältet så att en omladdning inte ser ut
+    // som ett nytt misslyckat försök. Inga tokens eller feltexter sparas.
+    window.history.replaceState(
+      {},
+      "",
+      authRedirectUrl(window.location.origin, import.meta.env.BASE_URL),
+    );
+  }, [initialAuthError]);
 
   if (!loading && session) return <Navigate to="/" replace />;
 
@@ -49,11 +66,7 @@ export default function Login() {
     setError(null);
 
     try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: code.trim(),
-        type: "email",
-      });
+      const { error: verifyError } = await verifyEmailOtp(supabase.auth, email, code);
 
       if (verifyError) {
         setError("Koden är fel eller har gått ut. Kontrollera mejlet eller be om en ny kod.");
@@ -130,7 +143,11 @@ export default function Login() {
                 placeholder="du@exempel.se"
               />
             </Field>
-            {error && <p className="text-body-md text-error">{error}</p>}
+            {error && (
+              <p className="text-body-md text-error" role="alert">
+                {error}
+              </p>
+            )}
             <Button type="submit" disabled={busy} className="w-full">
               {busy ? "Skickar..." : "Skicka inloggningslänk"}
             </Button>
