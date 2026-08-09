@@ -33,16 +33,33 @@ const authParam = (url: URL, key: string): string | null => {
  */
 export function authCallbackError(currentUrl: string): string | null {
   const url = new URL(currentUrl);
+  const internalError = url.searchParams.get("auth_error")?.toLowerCase() ?? "";
   const error = authParam(url, "error")?.toLowerCase() ?? "";
   const errorCode = authParam(url, "error_code")?.toLowerCase() ?? "";
   const description = authParam(url, "error_description")?.toLowerCase() ?? "";
 
   const invalidOrUsed =
+    internalError === "invalid_link" ||
     error === "access_denied" ||
     errorCode === "otp_expired" ||
     /invalid|expired|already (?:been )?used|ogiltig|utgången|använd/.test(description);
 
   return invalidOrUsed ? INVALID_AUTH_LINK_MESSAGE : null;
+}
+
+/**
+ * Ett authfel landar först på appens rot. Den skyddade routen för bara vidare
+ * en intern markering; leverantörens feltext och eventuella tokens stannar kvar.
+ */
+export function authErrorLoginPath(currentUrl: string): string {
+  return authCallbackError(currentUrl)
+    ? "/logga-in?auth_error=invalid_link"
+    : "/logga-in";
+}
+
+/** Rensad loginadress för respektive byggvariant, utan authfel eller token. */
+export function authLoginUrl(origin: string, baseUrl: string): string {
+  return new URL("logga-in", authRedirectUrl(origin, baseUrl)).toString();
 }
 
 export interface EmailOtpVerification {

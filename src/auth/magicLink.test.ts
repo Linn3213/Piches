@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   authCallbackError,
+  authErrorLoginPath,
+  authLoginUrl,
   authRedirectUrl,
   emailOtpVerification,
   INVALID_AUTH_LINK_MESSAGE,
@@ -46,6 +48,38 @@ describe("authCallbackError", () => {
   it("visar inget fel för en callback utan authfel", () => {
     expect(authCallbackError("https://piches.essensiadesign.se/#access_token=ok"))
       .toBeNull();
+  });
+
+  it("översätter ett känt authfel till en intern, tokenfri markering", () => {
+    expect(
+      authErrorLoginPath(
+        "https://piches.essensiadesign.se/?error=access_denied&error_code=otp_expired",
+      ),
+    ).toBe("/logga-in?auth_error=invalid_link");
+
+    expect(
+      authErrorLoginPath("https://piches.essensiadesign.se/#access_token=hemlig"),
+    ).toBe("/logga-in");
+
+    expect(
+      authErrorLoginPath(
+        "https://piches.essensiadesign.se/?error=access_denied#access_token=hemlig",
+      ),
+    ).toBe("/logga-in?auth_error=invalid_link");
+    expect(
+      authCallbackError(
+        "https://piches.essensiadesign.se/logga-in?auth_error=invalid_link",
+      ),
+    ).toBe(INVALID_AUTH_LINK_MESSAGE);
+  });
+
+  it("rensar adressfältet till login på rätt byggvariant", () => {
+    expect(authLoginUrl("https://piches.essensiadesign.se", "/")).toBe(
+      "https://piches.essensiadesign.se/logga-in",
+    );
+    expect(authLoginUrl("https://essensiadesign.se", "/piches/")).toBe(
+      "https://essensiadesign.se/piches/logga-in",
+    );
   });
 });
 

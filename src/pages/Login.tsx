@@ -6,6 +6,7 @@ import { Button, Field, Input } from "@/components/ui";
 import { Logo } from "@/components/Logo";
 import {
   authCallbackError,
+  authLoginUrl,
   authRedirectUrl,
   verifyEmailOtp,
 } from "@/auth/magicLink";
@@ -28,7 +29,7 @@ export default function Login() {
     window.history.replaceState(
       {},
       "",
-      authRedirectUrl(window.location.origin, import.meta.env.BASE_URL),
+      authLoginUrl(window.location.origin, import.meta.env.BASE_URL),
     );
   }, [initialAuthError]);
 

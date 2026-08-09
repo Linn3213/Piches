@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "@/auth/AuthProvider";
+import { authErrorLoginPath } from "@/auth/magicLink";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
@@ -15,7 +16,13 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!session) {
-    return <Navigate to="/logga-in" replace state={{ from: location.pathname }} />;
+    return (
+      <Navigate
+        to={authErrorLoginPath(window.location.href)}
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
   }
 
   return <>{children}</>;
