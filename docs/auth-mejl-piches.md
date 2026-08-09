@@ -5,9 +5,10 @@ verifieringslänk och dessutom en sexsiffrig reservkod som kan anges i appen.
 
 ## Lokal källkod
 
-Den senaste säkra versionen av den globala hooken ligger i Studio L.A-repot:
+Den senaste säkra versionen av den globala hooken ligger i Studio L.A-repots
+funktionsmapp:
 
-`C:\Users\linn_\OneDrive\Claude\studiola\supabase\functions\auth-email-hook\index.ts`
+`C:\Users\linn_\OneDrive\Claude\studiola\supabase\functions\auth-email-hook\`
 
 Den versionen verifierar Supabases Standard Webhooks-signatur, skickar MIME-delar
 som base64 och har separata grenar för de andra apparna. Deploya inte den äldre
@@ -15,16 +16,21 @@ kopian under `tva-spar-versioner/.../supabase-shared/`; den saknar dessa
 säkerhets- och leveransfixar.
 
 Piches-grenen är additiv och väljs när `redirect_to` eller `site_url` innehåller
-`piches`. Den bygger verifieringslänken från hook-payloadens `token_hash`,
-`email_action_type` och `redirect_to`, och visar samtidigt hook-payloadens kod.
-Om `token_hash` saknas stoppas utskicket eftersom länken är huvudvägen.
+`piches`. `index.ts` importerar den testade kontraktsmodulen `piches-email.ts`;
+båda filerna måste därför följa med vid deploy. Modulen bygger
+verifieringslänken från hook-payloadens `token_hash`, `email_action_type` och
+`redirect_to`, visar samtidigt hook-payloadens kod och avvisar relativa eller
+främmande redirect-adresser. Om `token_hash` saknas stoppas utskicket eftersom
+länken är huvudvägen.
 
 ## Det som måste göras i Supabase Dashboard
 
 Projekt: det delade projektet som Piches redan använder.
 
 1. Öppna **Edge Functions → auth-email-hook** och deploya hela den uppdaterade
-   `index.ts` från Studio L.A-repot.
+   funktionsmappen från Studio L.A-repot. Minst `index.ts` och
+   `piches-email.ts` måste finnas i samma deploy; deploya inte en fristående
+   kopia av bara `index.ts`.
 2. Kontrollera att function-secreten `SEND_EMAIL_HOOK_SECRET` finns. Värdet ska
    vara hemligheten från **Authentication → Hooks → Send Email**. Kopiera inte
    värdet till repot eller denna fil.
