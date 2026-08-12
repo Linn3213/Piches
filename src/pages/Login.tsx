@@ -45,6 +45,12 @@ export default function Login() {
         email: email.trim(),
         options: {
           emailRedirectTo: authRedirectUrl(window.location.origin, import.meta.env.BASE_URL),
+          /* Piches är ett internt verktyg för en enda användare, inte en
+             tjänst med öppen registrering. Utan den här raden skapade varje
+             främling som hittade adressen ett konto i auth-poolen som DELAS
+             med Studio L.A, Planexr och Learnnd. RLS hindrade dem från att se
+             data, men dörren stod öppen och rader skrevs i auth.users. */
+          shouldCreateUser: false,
         },
       });
 

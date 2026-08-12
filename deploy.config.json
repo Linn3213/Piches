@@ -1,0 +1,22 @@
+{
+  "username": "u912292360",
+  "targets": {
+    "standalone": {
+      "domain": "piches.essensiadesign.se",
+      "dist": "dist",
+      "build": "build"
+    },
+    "essensia": {
+      "domain": "essensiadesign.se",
+      "dist": "dist-essensia",
+      "build": "build:essensia",
+      "path": "piches"
+    },
+    "linnartistry": {
+      "domain": "linnartistry.se",
+      "dist": "dist-linnartistry",
+      "build": "build:linnartistry",
+      "path": "piches"
+    }
+  }
+}
