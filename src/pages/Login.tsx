@@ -160,6 +160,27 @@ export default function Login() {
             </Button>
           </form>
         )}
+
+        {/* Vag in for den som INTE har ett konto.
+            Registreringen ar stangd med flit: Piches delar auth-pool med
+            Studio L.A, Planexr och Learnnd, sa en oppen dorr har skulle lata
+            vem som helst skapa rader i den poolen. Men utan nagon vag alls kan
+            produkten heller aldrig saljas, for den som hittar hit och blir
+            intresserad mots bara av en inloggning hon inte kan anvanda.
+            Intresseanmalan gar till samma lead-flode som ovriga, och Linn
+            oppnar kontot for hand. */}
+        <div className="mt-10 border-t border-outline-variant/40 pt-6">
+          <p className="text-body-md text-on-surface-variant">
+            Har du inget konto? Piches öppnas för en kreatör i taget, så att varje uppsättning blir
+            rätt från början.{" "}
+            <a
+              href="mailto:info@essensiadesign.se?subject=Jag%20vill%20prova%20Piches&body=Hej!%20Jag%20jobbar%20med%20UGC%20och%20vill%20g%C3%A4rna%20prova%20Piches.%20H%C3%A4r%20%C3%A4r%20lite%20om%20mig%3A%0A%0A"
+              className="underline transition-colors hover:text-on-surface"
+            >
+              Skriv en rad så hör jag av mig.
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
