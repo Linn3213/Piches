@@ -169,10 +169,21 @@ export default function Login() {
             intresserad mots bara av en inloggning hon inte kan anvanda.
             Intresseanmalan gar till samma lead-flode som ovriga, och Linn
             oppnar kontot for hand. */}
+        {/* PRIS plus vag in.
+            Utan en siffra kan Piches inte saljas till nagon, aven om produkten
+            ar fardig: den som blir intresserad vet inte om den kostar 99 eller
+            9 000 och hor darfor aldrig av sig. Kortbetalning finns inte an, men
+            den behovs heller inte for de forsta kunderna, precis som for
+            Planexr: Linn satter upp kontot och fakturerar.
+            ANDRA SIFFRAN HAR, det ar enda stallet den star. */}
         <div className="mt-10 border-t border-outline-variant/40 pt-6">
-          <p className="text-body-md text-on-surface-variant">
-            Har du inget konto? Piches öppnas för en kreatör i taget, så att varje uppsättning blir
-            rätt från början.{" "}
+          <p className="text-title-md text-on-surface">299 kr i månaden</p>
+          <p className="mt-1.5 text-body-md text-on-surface-variant">
+            Exklusive moms, faktureras kvartalsvis, och du kan säga upp när du vill. En enda licens
+            som hinner löpa ut obemärkt kostar oftast mer än ett helt år av det här.
+          </p>
+          <p className="mt-4 text-body-md text-on-surface-variant">
+            Piches öppnas för en kreatör i taget, så att varje uppsättning blir rätt från början.{" "}
             <a
               href="mailto:info@essensiadesign.se?subject=Jag%20vill%20prova%20Piches&body=Hej!%20Jag%20jobbar%20med%20UGC%20och%20vill%20g%C3%A4rna%20prova%20Piches.%20H%C3%A4r%20%C3%A4r%20lite%20om%20mig%3A%0A%0A"
               className="underline transition-colors hover:text-on-surface"
