@@ -54,9 +54,22 @@ export default function Login() {
         },
       });
 
-      // Tekniska fel får aldrig nå användaren rakt av.
+      // Tekniska fel får aldrig nå användaren rakt av, men de får heller inte
+      // kollapsa till ett svar som pekar åt fel håll. Tidigare svarade appen
+      // "kontrollera adressen" även när adressen var helt rätt och det enda
+      // som saknades var ett konto, så den som skrivit rätt satt och skrev om
+      // samma mejladress om och om igen utan att något ändrades.
       if (authError) {
-        setError("Det gick inte att skicka länken. Kontrollera adressen och försök igen.");
+        const kod = (authError as { code?: string }).code;
+        if (kod === "otp_disabled") {
+          setError(
+            "Det finns inget konto för den adressen. Piches öppnas med en inbjudan, så hör av dig så lägger vi upp dig.",
+          );
+        } else if (authError.status === 429 || kod === "over_email_send_rate_limit") {
+          setError("Du har begärt flera länkar på kort tid. Vänta en stund och försök igen.");
+        } else {
+          setError("Det gick inte att skicka länken. Kontrollera adressen och försök igen.");
+        }
       } else {
         setSent(true);
       }
