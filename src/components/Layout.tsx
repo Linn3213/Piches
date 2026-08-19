@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import clsx from "clsx";
 import { useAuth } from "@/auth/AuthProvider";
 import { Logo } from "@/components/Logo";
@@ -23,8 +24,30 @@ const SECONDARY = [
   { to: "/konto", label: "Konto", icon: "credit_card" },
 ];
 
+/**
+ * MOBILENS BOTTENRAD, fem platser och inte sex.
+ *
+ * Sex etiketter fick inte plats pa nagon telefon: RÄTTIGHETER krockade med
+ * UPPDRAG och LÖNSAMHET med INTÄKTER pa allt under 430 pixlar, alltsa pa i
+ * princip varje telefon som finns. Uppmatt i webblasare pa 320, 360, 390 och
+ * 430 pixlar.
+ *
+ * Vardre an sa: sidomenyn ar dold under md, och den var enda vagen till
+ * Varumarken, Uppgifter, Installningar och Konto. En anvandare med telefon
+ * kunde alltsa inte ens oppna betalsidan, vilket ar ett direkt hal i affaren
+ * for en app vars kunder jobbar fran mobilen.
+ */
+const MOBILNAV = NAV.filter((n) => ["/", "/uppdrag", "/rattigheter", "/pris"].includes(n.to));
+
+const MER = [...NAV.filter((n) => !MOBILNAV.includes(n)), ...SECONDARY];
+
 export function Layout() {
   const { signOut } = useAuth();
+  const [merOppen, setMerOppen] = useState(false);
+  const plats = useLocation();
+
+  // Arket ska aldrig ligga kvar over den sida man just valde.
+  useEffect(() => setMerOppen(false), [plats.pathname]);
   // Antalet licenser som snart går ut styr notisbrickan — det är den
   // siffran som faktiskt betyder pengar på väg att rinna ut.
   const { data: radar } = useExpiryRadar();
@@ -91,16 +114,68 @@ export function Layout() {
         </AccessGate>
       </main>
 
-      {/* Bottennavigering, mobil */}
-      <nav className="glass pb-safe fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-3xl border-t border-outline-variant/30 px-2 py-2.5 md:hidden">
-        {NAV.map((item) => (
+      {/* Mer-arket, mobil. Har bor allt som inte far plats i bottenraden, och
+          utan det gick Konto, Installningar, Varumarken och Uppgifter inte att
+          na alls fran en telefon. */}
+      {merOppen && (
+        <div
+          className="fixed inset-0 z-[60] md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mer i menyn"
+        >
+          <button
+            aria-label="Stäng menyn"
+            onClick={() => setMerOppen(false)}
+            className="absolute inset-0 bg-black/40"
+          />
+          <div className="pb-safe absolute bottom-0 left-0 max-h-[80vh] w-full overflow-y-auto rounded-t-3xl border-t border-outline-variant/30 bg-surface-container-low p-5 shadow-soft">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline-variant" />
+            <div className="space-y-1">
+              {MER.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    clsx(
+                      "flex items-center gap-3 rounded-full px-4 py-3 text-label-caps uppercase transition-colors",
+                      isActive
+                        ? "bg-primary-container font-bold text-on-primary-container"
+                        : "text-on-surface hover:bg-surface-container-highest",
+                    )
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon name={item.icon} filled={isActive} size={20} />
+                      {item.label}
+                    </>
+                  )}
+                </NavLink>
+              ))}
+              <button
+                onClick={signOut}
+                className="flex w-full items-center gap-3 rounded-full px-4 py-3 text-label-caps uppercase text-on-surface-variant transition-colors hover:bg-surface-container-highest"
+              >
+                <Icon name="logout" size={20} />
+                Logga ut
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottennavigering, mobil. FYRA sidor plus Mer, inte sex.
+          Sex etiketter krockade med varandra pa varje telefon under 430 pixlar. */}
+      <nav className="glass pb-safe fixed bottom-0 left-0 z-50 flex w-full items-stretch rounded-t-3xl border-t border-outline-variant/30 px-1 py-2.5 md:hidden">
+        {MOBILNAV.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
               clsx(
-                "relative flex min-w-[62px] flex-col items-center gap-1 rounded-full px-3 py-1.5 transition-all active:scale-90",
+                "relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-full px-1 py-1.5 transition-all active:scale-90",
                 isActive
                   ? "bg-primary-container text-on-primary-container"
                   : "text-on-surface-variant",
@@ -117,11 +192,34 @@ export function Layout() {
                     </span>
                   )}
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wide">{item.label}</span>
+                {/* Bottenraden skriver etiketterna med versal begynnelsebokstav
+                    och inte i kapitaler. "RÄTTIGHETER" kraver 82 pixlar och
+                    platsen ar 68, sa ordet kapades pa varje telefon. Samma ord
+                    i vanlig skrift tar 58. Sidomenyn behaller kapitalerna, dar
+                    finns det gott om plats. */}
+                <span className="w-full truncate text-center text-[10px] font-semibold tracking-tight">
+                  {item.label}
+                </span>
               </>
             )}
           </NavLink>
         ))}
+        <button
+          onClick={() => setMerOppen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={merOppen}
+          className={clsx(
+            "relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-full px-1 py-1.5 transition-all active:scale-90",
+            MER.some((m) => plats.pathname.startsWith(m.to) && m.to !== "/")
+              ? "bg-primary-container text-on-primary-container"
+              : "text-on-surface-variant",
+          )}
+        >
+          <Icon name="more_horiz" size={22} />
+          <span className="w-full truncate text-center text-[10px] font-semibold tracking-tight">
+            Mer
+          </span>
+        </button>
       </nav>
     </div>
   );

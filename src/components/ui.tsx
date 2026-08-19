@@ -98,13 +98,18 @@ export function Field({
       {children}
       {/* Utan alfa. Nedtonad till /70 landade hjalptexten pa 4,06:1 mot
           kortytan, alltsa under kravet 4,5:1 for text under 18 px. */}
-      {hint && <span className="block text-xs text-outline">{hint}</span>}
+      {/* Hjalptexten anvande tidigare "outline", som ar en KANTFARG och inte en
+          textfarg. Pa vitt gav den kvoten 4,47 mot kravet 4,50, alltsa precis
+          under, och pa de tva paalagda skinnen betydligt samre an sa. Den som
+          behover hjalptexten mest ar den som ser samst.
+          Matt i webblasare, inte uppskattat. */}
+      {hint && <span className="block text-xs text-on-surface-variant">{hint}</span>}
     </label>
   );
 }
 
 const control =
-  "w-full rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none transition-colors placeholder:text-outline focus:border-primary";
+  "w-full rounded-lg border border-outline-variant/60 bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/70 focus:border-primary";
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={clsx(control, className)} {...props} />;
