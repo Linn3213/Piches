@@ -109,7 +109,7 @@ describe("fakturarader", () => {
 
   it("specificerar leverablerna på produktionsraden", () => {
     const lines = buildInvoiceLines(deal(), deliverables, [license()]);
-    expect(lines[0].detail).toBe("3 video");
+    expect(lines[0].detail).toBe("3 videor");
   });
 
   it("lägger allt på en rad när licensen saknar pris, i stället för att hitta på", () => {
@@ -121,6 +121,47 @@ describe("fakturarader", () => {
   it("hittar inte på en uppdelning när licensen kostar mer än affären", () => {
     const lines = buildInvoiceLines(deal({ value_sek: 10000 }), deliverables, [license()]);
     expect(lines[0].amount).toBe(10000);
+    // DET HÄR ÄR POÄNGEN, och det var precis det den gamla versionen av testet
+    // inte kollade: raden ovan stämde medan licensraden ändå låg kvar under,
+    // så fakturan summerade 22 000 på en affär värd 10 000.
+    expect(lines).toHaveLength(1);
+    expect(lines.reduce((s, r) => s + r.amount, 0)).toBe(10000);
+  });
+
+  it("summerar aldrig mer än affären är värd, hur många licenser det än finns", () => {
+    // Två licenser på 8 000 och 5 000 i en affär på 12 000 gav tidigare en
+    // produktionsrad på 12 000 plus båda licensraderna, alltså 25 000 att
+    // betala. Uppdagat på en riktig faktura i produktion, inte i ett test.
+    const lines = buildInvoiceLines(
+      deal({ value_sek: 12000 }),
+      deliverables,
+      [license({ fee_sek: 8000 }), license({ fee_sek: 5000 })],
+    );
+    expect(lines.reduce((s, r) => s + r.amount, 0)).toBe(12000);
+    expect(lines).toHaveLength(1);
+  });
+
+  it("säger att rättigheterna ingår när de inte kan brytas ut på egen rad", () => {
+    // Annars ser raden ut som ren produktion trots att kunden köpt
+    // nyttjanderätten också, och då står det fel sak i kundens bokföring.
+    const lines = buildInvoiceLines(deal({ value_sek: 10000 }), deliverables, [license()]);
+    expect(lines[0].detail).toContain("nyttjanderätt");
+  });
+
+  it("summerar exakt till affären även när uppdelningen går ihop", () => {
+    const lines = buildInvoiceLines(deal(), deliverables, [license()]);
+    expect(lines.reduce((s, r) => s + r.amount, 0)).toBe(30000);
+  });
+
+  it("skriver ental och flertal rätt, och stavar inte om TikTok", () => {
+    const en = buildInvoiceLines(deal(), [{ ...deliverables[0], quantity: 1 }], []);
+    expect(en[0].detail).toBe("1 video");
+    const tiktok = buildInvoiceLines(
+      deal(),
+      [{ ...deliverables[0], format: "tiktok", quantity: 4 }],
+      [],
+    );
+    expect(tiktok[0].detail).toBe("4 TikToks");
   });
 
   it("skriver utan tidsbegränsning för en evig licens", () => {

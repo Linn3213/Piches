@@ -1,5 +1,5 @@
 import type { Brand, Deliverable, License, Pitch, Settings } from "@/types/db";
-import { CHANNEL_LABEL, FORMAT_LABEL, TERRITORY_LABEL } from "@/types/db";
+import { CHANNEL_LABEL, FORMAT_INLINE, TERRITORY_LABEL } from "@/types/db";
 import { applyVat, determineVat, type VatLines, type VatTreatment } from "@/lib/vat";
 import { parseDate } from "@/lib/rights";
 
@@ -88,6 +88,19 @@ function licenseSummary(license: License): string {
  * den uppdelningen som förklarar priset: en licens som kostar mer än filmen
  * ser orimlig ut tills man ser att den täcker annonsering i tolv månader.
  */
+/**
+ * "3 reels" och inte "3 reel".
+ *
+ * Ett format vi inte kanner igen faller tillbaka pa sin egen nyckel i stallet
+ * for att krascha hela fakturan. Da star det atminstone nagot lasbart pa
+ * raden, och felet syns, i stallet for att sidan blir vit mitt i en faktura.
+ */
+function formatSpec(d: Deliverable): string {
+  const form = FORMAT_INLINE[d.format];
+  if (!form) return `${d.quantity} ${d.format}`;
+  return `${d.quantity} ${d.quantity === 1 ? form.en : form.flera}`;
+}
+
 export function buildInvoiceLines(
   deal: Pitch,
   deliverables: Deliverable[],
@@ -109,25 +122,34 @@ export function buildInvoiceLines(
   const produktion = kanDelas ? total - licensSumma : total;
 
   if (produktion > 0) {
-    const spec = deliverables.length
-      ? deliverables
-          .map((d) => `${d.quantity} ${FORMAT_LABEL[d.format].toLowerCase()}`)
-          .join(", ")
-      : null;
+    const spec = deliverables.length ? deliverables.map(formatSpec).join(", ") : null;
+    // Ryms inte licenserna i ordervardet redovisas allt pa EN rad, och da
+    // maste raden saga att rattigheterna ingar. Annars ser det ut som ren
+    // produktion trots att kunden kopt nyttjanderatten ocksa.
+    const rattigheterIngar = !kanDelas && licensSumma > 0;
     lines.push({
       description: deal.subject?.trim() || "Produktion av innehåll",
-      detail: spec,
+      detail: rattigheterIngar
+        ? [spec, "inklusive nyttjanderätt till materialet"].filter(Boolean).join(", ")
+        : spec,
       amount: produktion,
     });
   }
 
-  for (const l of licenses) {
-    if (l.fee_sek === null || l.fee_sek <= 0) continue;
-    lines.push({
-      description: "Nyttjanderätt till materialet",
-      detail: licenseSummary(l),
-      amount: l.fee_sek,
-    });
+  // Licensraderna hor ihop med uppdelningen och far bara finnas nar den galler.
+  // Utan den har grinden fick en affar pa 12 000 med licenser pa 13 000 en
+  // produktionsrad pa 12 000 OCH tva licensrader, alltsa 25 000 att betala pa
+  // en affar vard 12 000. Kommentaren ovanfor beskrev redan regeln, men koden
+  // gjorde det inte, och det ar koden kunden far fakturan ur.
+  if (kanDelas) {
+    for (const l of licenses) {
+      if (l.fee_sek === null || l.fee_sek <= 0) continue;
+      lines.push({
+        description: "Nyttjanderätt till materialet",
+        detail: licenseSummary(l),
+        amount: l.fee_sek,
+      });
+    }
   }
 
   return lines;

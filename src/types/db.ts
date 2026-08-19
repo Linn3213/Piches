@@ -382,6 +382,29 @@ export const FORMAT_LABEL: Record<DeliverableFormat, string> = {
   annat: "Annat",
 };
 
+/**
+ * Formaten som de ser ut MITT I en mening, med ratt kasus och ratt pluralform.
+ *
+ * FORMAT_LABEL ovanfor ar rubrikformen ("Reel", "TikTok") och den duger inte
+ * har: fakturan skrev tidigare "3 reel" och "2 video", eftersom den sankte
+ * gemener pa singularformen rakt av. Det ar ett dokument kunden laser och
+ * sparar i sin bokforing, sa det far varken se ut som en maskinoversattning
+ * eller stava om TikTok.
+ *
+ * Bada formerna ar skrivna med det kasus de ska ha. Ingen kod far gora
+ * toLowerCase pa dem, for da forsvinner versalerna i TikTok och UGC.
+ */
+export const FORMAT_INLINE: Record<DeliverableFormat, { en: string; flera: string }> = {
+  video: { en: "video", flera: "videor" },
+  foto: { en: "foto", flera: "foton" },
+  story: { en: "story", flera: "stories" },
+  reel: { en: "reel", flera: "reels" },
+  tiktok: { en: "TikTok", flera: "TikToks" },
+  ugc_ad: { en: "UGC-annons", flera: "UGC-annonser" },
+  // "3 annat" gar inte att skriva pa svenska.
+  annat: { en: "del", flera: "delar" },
+};
+
 export const CHANNEL_LABEL: Record<Channel, string> = {
   organic_creator: "Mina egna kanaler",
   organic_brand: "Varumärkets kanaler",
