@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useEffect, useRef } from "react";
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -241,6 +242,17 @@ export function Empty({
   );
 }
 
+/**
+ * Dialogrutan.
+ *
+ * Den saknade tidigare bade roll och tangentbord: skarmlasare las den som en
+ * vanlig div mitt i sidan, Escape gjorde ingenting, fokus lag kvar bakom rutan
+ * och sidan under kunde scrollas medan formularet lag over. Alltsa fungerade
+ * den bara for den som ser skarmen och anvander mus.
+ *
+ * Klick UTANFOR rutan stanger med flit inte. Rutorna innehaller formular, och
+ * ett oavsiktligt klick bredvid ska inte kasta bort det nagon just skrivit.
+ */
 export function Modal({
   open,
   title,
@@ -254,12 +266,43 @@ export function Modal({
   children: ReactNode;
   wide?: boolean;
 }) {
+  const rutan = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const påTangent = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", påTangent);
+
+    // Sidan bakom ska ligga still. Utan det scrollar bakgrunden i stället för
+    // rutan så fort listan inuti tar slut, och på mobil ser det ut som att
+    // formuläret hoppar bort.
+    const gammalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    // Fokus in i rutan, annars står markören kvar på knappen bakom och
+    // tabbning fortsätter i sidan under i stället för i formuläret.
+    rutan.current?.focus();
+
+    return () => {
+      document.removeEventListener("keydown", påTangent);
+      document.body.style.overflow = gammalOverflow;
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-on-background/30 sm:items-center sm:p-6">
       <div
+        ref={rutan}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
         className={clsx(
-          "max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-background p-6 sm:rounded-3xl",
+          "max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-background p-6 outline-none sm:rounded-3xl",
           wide ? "sm:max-w-2xl" : "sm:max-w-lg",
         )}
       >
