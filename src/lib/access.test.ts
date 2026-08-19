@@ -6,7 +6,6 @@ import {
   stripeStatusTillStatus,
   TIERS,
   tierPlan,
-  trialEndsOn,
 } from "@/lib/access";
 
 const IDAG = new Date(2026, 7, 17); // 17 aug 2026
@@ -101,16 +100,6 @@ describe("åtkomst", () => {
   it("nekar en provperiod utan slutdatum, i stället för att gälla för alltid", () => {
     const a = evaluateAccess(sub({ trial_ends_on: null }), IDAG);
     expect(a.allowed).toBe(false);
-  });
-});
-
-describe("provperiodens längd", () => {
-  it("räknar fjorton dagar framåt", () => {
-    expect(trialEndsOn(IDAG)).toBe("2026-08-31");
-  });
-
-  it("klarar månadsskifte", () => {
-    expect(trialEndsOn(new Date(2026, 7, 25))).toBe("2026-09-08");
   });
 });
 

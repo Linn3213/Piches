@@ -1,13 +1,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import {
-  behoverStripeSynk,
-  evaluateAccess,
-  trialEndsOn,
-  type Access,
-  type Tier,
-} from "@/lib/access";
+import { behoverStripeSynk, evaluateAccess, type Access, type Tier } from "@/lib/access";
 import type { Subscription } from "@/types/db";
 
 /**
@@ -79,6 +73,17 @@ export function useAccess(): { access: Access; isLoading: boolean; error: unknow
  * Startar provperioden. Raden skapas av användaren själv, men RLS tillåter
  * bara status "provperiod" med högst fjorton dagar och utan Stripe-koppling,
  * så det går inte att ge sig själv ett abonnemang från webbläsarkonsolen.
+ *
+ * SLUTDATUMET SKICKAS INTE MED. Det sätts av databasen.
+ *
+ * Förut räknade den här raden ut datumet med webbläsarens lokala klocka, och
+ * RLS jämförde mot serverns current_date, som är UTC. Mellan midnatt och två
+ * på natten svensk sommartid hade webbläsaren bytt dygn medan servern låg kvar
+ * på gårdagen, datumet blev en dag för långt fram och registreringen svarade
+ * 403. Alltså två timmar varje natt då ingen ny kund kunde komma in, utan att
+ * det syntes någonstans, eftersom både bygget och testerna är gröna dygnet
+ * runt. Med serverns default finns det inte längre två klockor att vara oense
+ * om.
  */
 export function useStartTrial() {
   const qc = useQueryClient();
@@ -89,7 +94,6 @@ export function useStartTrial() {
         .insert({
           tier: "solo",
           status: "provperiod",
-          trial_ends_on: trialEndsOn(new Date()),
         })
         .select()
         .single();

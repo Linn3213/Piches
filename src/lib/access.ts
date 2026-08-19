@@ -84,11 +84,20 @@ export function evaluateAccess(
 
 export const TRIAL_DAYS = 14;
 
-/** Slutdatum för en ny provperiod, som datumsträng. */
-export function trialEndsOn(today: Date, days = TRIAL_DAYS): string {
-  const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+/*
+ * HAR LAG TIDIGARE trialEndsOn(), som raknade ut provperiodens slutdatum i
+ * webblasaren. Den ar borttagen med flit.
+ *
+ * Datumet jamfordes av RLS mot serverns current_date, som ar UTC, medan
+ * uträkningen anvande webblasarens lokala klocka. Mellan midnatt och tva pa
+ * natten svensk sommartid hade webblasaren bytt dygn medan servern lag kvar pa
+ * gardagen, sa datumet blev en dag for langt fram och registreringen svarade
+ * 403. Tva timmar varje natt da ingen ny kund kunde komma in.
+ *
+ * Nu satter databasen datumet med sin egen klocka (default current_date + 14),
+ * och da finns det inte langre tva klockor att vara oense om. Rakna aldrig ut
+ * det har i klienten igen.
+ */
 
 export type Tier = "solo" | "studio";
 
