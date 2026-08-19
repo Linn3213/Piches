@@ -447,3 +447,22 @@ export const PRODUCT_STATUS_LABEL: Record<ProductStatus, string> = {
   lanserad: "Lanserad",
   vilande: "Vilande",
 };
+
+// --- Abonnemang (0008_piches_subscriptions.sql) --------------------------
+
+export type SubscriptionTier = "solo" | "studio";
+export type SubscriptionStatus = "provperiod" | "aktiv" | "forfallen" | "uppsagd";
+
+export type Subscription = {
+  user_id: string;
+  tier: SubscriptionTier;
+  status: SubscriptionStatus;
+  trial_ends_on: string | null;
+  current_period_end: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  /** Konto som Linn öppnat för hand och fakturerar utanför appen. */
+  granted_by_owner: boolean;
+  created_at: string;
+  updated_at: string;
+};

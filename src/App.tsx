@@ -16,6 +16,7 @@ import Brands from "@/pages/Brands";
 import BrandDetail from "@/pages/BrandDetail";
 import Tasks from "@/pages/Tasks";
 import Settings from "@/pages/Settings";
+import Konto from "@/pages/Konto";
 
 function NotFound() {
   return (
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="varumarken/:id" element={<BrandDetail />} />
           <Route path="uppgifter" element={<Tasks />} />
           <Route path="installningar" element={<Settings />} />
+          <Route path="konto" element={<Konto />} />
           {/* En felstavad adress ska aldrig ge en tom yta utan vag tillbaka. */}
           <Route path="*" element={<NotFound />} />
         </Route>

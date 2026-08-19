@@ -5,6 +5,7 @@ import { Logo } from "@/components/Logo";
 import { Icon } from "@/components/ui";
 import { useExpiryRadar } from "@/hooks/useLicenses";
 import { BRAND_LABEL } from "@/lib/brand";
+import { AccessGate } from "@/components/AccessGate";
 
 const NAV = [
   { to: "/", label: "Idag", icon: "dashboard", end: true },
@@ -19,6 +20,7 @@ const SECONDARY = [
   { to: "/varumarken", label: "Varumärken", icon: "storefront" },
   { to: "/uppgifter", label: "Uppgifter", icon: "checklist" },
   { to: "/installningar", label: "Inställningar", icon: "settings" },
+  { to: "/konto", label: "Konto", icon: "credit_card" },
 ];
 
 export function Layout() {
@@ -84,7 +86,9 @@ export function Layout() {
       </header>
 
       <main className="mx-auto max-w-6xl px-5 pb-28 pt-6 md:px-10 md:pb-14 md:pt-10">
-        <Outlet />
+        <AccessGate>
+          <Outlet />
+        </AccessGate>
       </main>
 
       {/* Bottennavigering, mobil */}

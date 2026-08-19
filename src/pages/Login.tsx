@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/auth/AuthProvider";
 import { Button, Field, Input } from "@/components/ui";
 import { Logo } from "@/components/Logo";
+import { TIERS, TRIAL_DAYS } from "@/lib/access";
 import {
   authCallbackError,
   authLoginUrl,
@@ -17,6 +18,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
+  const [kanSkapaKonto, setKanSkapaKonto] = useState(false);
   const [busy, setBusy] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [error, setError] = useState<string | null>(initialAuthError);
@@ -35,22 +37,29 @@ export default function Login() {
 
   if (!loading && session) return <Navigate to="/" replace />;
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  /**
+   * Ett enda fält, två utfall.
+   *
+   * Tidigare var registreringen helt stängd och varje nytt konto öppnades för
+   * hand. Det höll för de tre första kunderna och blev sedan taket för hela
+   * affären, eftersom arbetet växte linjärt med antalet kunder.
+   *
+   * Nu görs ett försök att logga in UTAN att skapa konto. Svarar servern att
+   * kontot saknas erbjuds registrering i stället, med ett andra klick. Det gör
+   * att ingen främling råkar skriva en rad i auth-poolen bara genom att skriva
+   * fel adress, samtidigt som den som verkligen vill prova tar sig in själv.
+   */
+  async function skicka(skapaKonto: boolean) {
     setBusy(true);
     setError(null);
+    setKanSkapaKonto(false);
 
     try {
       const { error: authError } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
           emailRedirectTo: authRedirectUrl(window.location.origin, import.meta.env.BASE_URL),
-          /* Piches är ett internt verktyg för en enda användare, inte en
-             tjänst med öppen registrering. Utan den här raden skapade varje
-             främling som hittade adressen ett konto i auth-poolen som DELAS
-             med Studio L.A, Planexr och Learnnd. RLS hindrade dem från att se
-             data, men dörren stod öppen och rader skrevs i auth.users. */
-          shouldCreateUser: false,
+          shouldCreateUser: skapaKonto,
         },
       });
 
@@ -62,9 +71,8 @@ export default function Login() {
       if (authError) {
         const kod = (authError as { code?: string }).code;
         if (kod === "otp_disabled") {
-          setError(
-            "Det finns inget konto för den adressen. Piches öppnas med en inbjudan, så hör av dig så lägger vi upp dig.",
-          );
+          setKanSkapaKonto(true);
+          setError(null);
         } else if (authError.status === 429 || kod === "over_email_send_rate_limit") {
           setError("Du har begärt flera länkar på kort tid. Vänta en stund och försök igen.");
         } else {
@@ -152,7 +160,13 @@ export default function Login() {
             </button>
           </div>
         ) : (
-          <form onSubmit={submit} className="mt-8 space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void skicka(false);
+            }}
+            className="mt-8 space-y-4"
+          >
             <Field label="Mejladress">
               <Input
                 type="email"
@@ -174,35 +188,53 @@ export default function Login() {
           </form>
         )}
 
-        {/* Vag in for den som INTE har ett konto.
-            Registreringen ar stangd med flit: Piches delar auth-pool med
-            Studio L.A, Planexr och Learnnd, sa en oppen dorr har skulle lata
-            vem som helst skapa rader i den poolen. Men utan nagon vag alls kan
-            produkten heller aldrig saljas, for den som hittar hit och blir
-            intresserad mots bara av en inloggning hon inte kan anvanda.
-            Intresseanmalan gar till samma lead-flode som ovriga, och Linn
-            oppnar kontot for hand. */}
-        {/* PRIS plus vag in.
-            Utan en siffra kan Piches inte saljas till nagon, aven om produkten
-            ar fardig: den som blir intresserad vet inte om den kostar 99 eller
-            9 000 och hor darfor aldrig av sig. Kortbetalning finns inte an, men
-            den behovs heller inte for de forsta kunderna, precis som for
-            Planexr: Linn satter upp kontot och fakturerar.
-            ANDRA SIFFRAN HAR, det ar enda stallet den star. */}
-        <div className="mt-10 border-t border-outline-variant/40 pt-6">
-          <p className="text-title-md text-on-surface">299 kr i månaden</p>
-          <p className="mt-1.5 text-body-md text-on-surface-variant">
-            Exklusive moms, faktureras kvartalsvis, och du kan säga upp när du vill. En enda licens
-            som hinner löpa ut obemärkt kostar oftast mer än ett helt år av det här.
-          </p>
-          <p className="mt-4 text-body-md text-on-surface-variant">
-            Piches öppnas för en kreatör i taget, så att varje uppsättning blir rätt från början.{" "}
-            <a
-              href="mailto:info@essensiadesign.se?subject=Jag%20vill%20prova%20Piches&body=Hej!%20Jag%20jobbar%20med%20UGC%20och%20vill%20g%C3%A4rna%20prova%20Piches.%20H%C3%A4r%20%C3%A4r%20lite%20om%20mig%3A%0A%0A"
-              className="underline transition-colors hover:text-on-surface"
+        {/* Den som skrivit en adress utan konto möts inte längre av ett nej.
+            Texten säger rakt ut vad som händer, för ett klick som tyst skapar
+            ett konto åt någon som bara stavat fel är värre än ett extra steg. */}
+        {!sent && kanSkapaKonto && (
+          <div className="mt-5 rounded-xl border border-primary/30 bg-primary-container/30 p-5">
+            <p className="text-title-md text-on-surface">Det finns inget konto på {email} än.</p>
+            <p className="mt-1.5 text-body-md text-on-surface-variant">
+              Du kan skapa ett nu och köra {TRIAL_DAYS} dagar utan att betala, utan kort och utan
+              att binda upp dig. Är adressen felstavad ändrar du den bara och försöker igen.
+            </p>
+            <Button
+              type="button"
+              disabled={busy}
+              onClick={() => void skicka(true)}
+              className="mt-4 w-full"
             >
-              Skriv en rad så hör jag av mig.
-            </a>
+              {busy ? "Skapar konto..." : `Skapa konto och kör ${TRIAL_DAYS} dagar gratis`}
+            </Button>
+          </div>
+        )}
+
+        {/* PRISERNA STÅR I src/lib/access.ts, ingen annanstans.
+            En siffra som lever på två ställen hinner alltid bli två olika
+            siffror, och den kunden som såg det lägre priset har rätt. */}
+        <div className="mt-10 border-t border-outline-variant/40 pt-6">
+          <p className="text-label-caps uppercase text-on-surface-variant">
+            {TRIAL_DAYS} dagar gratis, sedan
+          </p>
+          <div className="mt-3 space-y-3">
+            {TIERS.map((plan) => (
+              <div
+                key={plan.tier}
+                className="rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-4"
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-title-md text-on-surface">{plan.label}</p>
+                  <p className="font-mono text-title-md text-primary">
+                    {plan.priceSek} kr/mån
+                  </p>
+                </div>
+                <p className="mt-1 text-body-md text-on-surface-variant">{plan.fits}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-body-md text-on-surface-variant">
+            Priserna är exklusive moms och du säger upp när du vill. En enda licens som hinner löpa
+            ut obemärkt kostar oftast mer än ett helt år av det här.
           </p>
         </div>
       </div>
