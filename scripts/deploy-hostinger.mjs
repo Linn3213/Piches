@@ -41,7 +41,10 @@ import { readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import archiver from "archiver";
+// archiver 8 slutade exportera en default. Utan raden nedan dog HELA
+// deployvagen med "does not provide an export named 'default'", alltsa efter
+// ett gront bygge och nollstallda tester.
+import { ZipArchive } from "archiver";
 import * as tus from "tus-js-client";
 
 const ROT = process.cwd();
@@ -228,7 +231,7 @@ async function zippaKatalog(katalog) {
   const zipPath = join(tempDir, "bygge.zip");
   await new Promise((resolve, reject) => {
     const output = createWriteStream(zipPath);
-    const arkiv = archiver("zip", { zlib: { level: 9 } });
+    const arkiv = new ZipArchive({ zlib: { level: 9 } });
     output.on("close", resolve);
     arkiv.on("error", reject);
     arkiv.pipe(output);

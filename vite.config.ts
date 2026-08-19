@@ -62,6 +62,13 @@ export default defineConfig(({ mode }) => {
               /<meta\s+name="theme-color"\s+content="[^"]*"\s*\/?>/,
               `<meta name="theme-color" content="${THEME_COLOR[brand]}" />`,
             );
+            // Husen ar privata installationer pa en kunds egen adress och ska
+            // aldrig hamna i nagot sokindex, till skillnad fran standalone som
+            // sedan landningssidan ar produktens skyltfonster.
+            out = out.replace(
+              /<meta\s+name="robots"\s+content="[^"]*"\s*\/?>/,
+              `<meta name="robots" content="noindex, nofollow, noarchive" />`,
+            );
           }
           return out;
         },

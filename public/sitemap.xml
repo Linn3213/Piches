@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Piches är en privat app och har inga publika indexerbara URL:er. -->
+  <!-- Bara de tva sidor som gar att lasa utan konto. Resten ligger bakom
+       inloggningen och har ingenting i ett sokindex att gora. -->
+  <url>
+    <loc>https://piches.essensiadesign.se/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://piches.essensiadesign.se/logga-in</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
 </urlset>

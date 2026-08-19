@@ -12,7 +12,8 @@
     "dev:linnartistry": "vite --mode linnartistry",
     "build:essensia": "tsc --noEmit && vite build --mode essensia",
     "build:linnartistry": "tsc --noEmit && vite build --mode linnartistry",
-    "build:all": "npm run build && npm run build:essensia && npm run build:linnartistry"
+    "build:all": "npm run build && npm run build:essensia && npm run build:linnartistry",
+    "deploy": "node scripts/deploy-hostinger.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.0",

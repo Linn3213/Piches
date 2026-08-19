@@ -1,2 +1,17 @@
+# Standalone-adressen ar produktens publika sida sedan landningssidan finns.
+# Appen bakom inloggningen har inget att indexera, och den slapper vi darfor
+# inte in nagon i.
 User-agent: *
-Disallow: /
+Allow: /$
+Allow: /logga-in
+Disallow: /uppdrag
+Disallow: /rattigheter
+Disallow: /pris
+Disallow: /intakter
+Disallow: /lonsamhet
+Disallow: /varumarken
+Disallow: /uppgifter
+Disallow: /installningar
+Disallow: /konto
+
+Sitemap: https://piches.essensiadesign.se/sitemap.xml
