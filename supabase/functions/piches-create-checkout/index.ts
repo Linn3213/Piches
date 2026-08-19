@@ -65,6 +65,34 @@ Deno.serve(async (req) => {
     const kunder = await stripe.customers.list({ email: user.email, limit: 1 })
     const customerId = kunder.data[0]?.id
 
+    // MOMSEN.
+    //
+    // Priset ar satt exklusive moms overallt i appen, precis som ar brukligt
+    // mot foretagskunder, men kassan drog forst 299 kronor rakt av utan att
+    // lagga pa nagot. Kunden betalade alltsa mindre an hon lovats, sagaren
+    // fick 239 kronor netto i stallet for 299, och pa fakturan fanns ingen
+    // momsrad att gora avdrag pa. Ingen hade markt det forran bokforingen.
+    //
+    // Stripe Tax kraver uppsattning i dashboarden. En vanlig skattesats gor
+    // samma sak har och nu: kassan visar "Moms 25%" som egen rad och kvittot
+    // blir ett underlag kunden kan anvanda.
+    const satser = await stripe.taxRates.list({ active: true, limit: 100 })
+    const moms =
+      satser.data.find(
+        (s) =>
+          s.percentage === 25 &&
+          s.inclusive === false &&
+          s.country === 'SE' &&
+          s.display_name === 'Moms',
+      ) ??
+      (await stripe.taxRates.create({
+        display_name: 'Moms',
+        description: 'Svensk mervärdesskatt 25 procent',
+        percentage: 25,
+        inclusive: false,
+        country: 'SE',
+      }))
+
     const origin = req.headers.get('origin') || 'https://piches.essensiadesign.se'
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
 
@@ -85,6 +113,7 @@ Deno.serve(async (req) => {
           product_data: { name: `Piches ${plan.label}`, description: plan.beskrivning },
         },
         quantity: 1,
+        tax_rates: [moms.id],
       }],
       allow_promotion_codes: true,
       automatic_tax: { enabled: false },
