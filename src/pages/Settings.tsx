@@ -317,6 +317,22 @@ export default function Settings() {
             />
           </Field>
         </div>
+
+        {/* Utgangsradarn finns nu ocksa utanfor appen. Utan mejlet halls loftet
+            bara for den som kommer ihag att logga in, alltsa precis den som
+            inte behovde paminnelsen. Pa som standard, men aldrig utan en vag
+            att stanga av. */}
+        <div className="mt-6 border-t border-outline-variant/40 pt-6">
+          <Checkbox
+            label="Mejla mig när en licens snart går ut"
+            checked={draft.email_radar !== false}
+            onChange={(v) => setBool("email_radar", v)}
+          />
+          <p className="mt-2 text-body-md text-on-surface-variant">
+            Du får ett mejl när framförhållningen ovan slår till, och ett sista under den
+            avslutande veckan. Aldrig fler än så per licens.
+          </p>
+        </div>
       </Card>
 
       <div className="flex items-center gap-3">

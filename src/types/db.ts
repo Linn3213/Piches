@@ -325,6 +325,8 @@ export type Settings = {
   target_monthly_revenue: number;
   audience_size: number;
   email_list_size: number;
+  /** Mejlar utgangsradarn utanfor appen. Pa som standard. */
+  email_radar: boolean;
   updated_at: string;
 };
 
@@ -367,6 +369,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, "user_id" | "updated_at"> = {
   target_monthly_revenue: 50000,
   audience_size: 0,
   email_list_size: 0,
+  email_radar: true,
 };
 
 export const FORMAT_LABEL: Record<DeliverableFormat, string> = {

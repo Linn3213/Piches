@@ -44,7 +44,17 @@ DirectoryIndex index.html
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Strict-Transport-Security "max-age=31536000"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-  Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+  # X-Robots-Tag ar BORTTAGEN har med flit.
+  #
+  # Den satt som en generell rubrik pa hela standalone-adressen och slog ut
+  # bade meta-taggen i HTML och robots.txt, eftersom en HTTP-rubrik vinner over
+  # bada. Sa lange hela adressen bara var en inloggningsruta var det ratt. Nu
+  # ar roten produktens skyltfonster, och da gor samma rad produkten omojlig
+  # att hitta i en sokning utan att det syns nagonstans i koden.
+  #
+  # Styrningen ligger i stallet dar den gar att lasa: <meta name="robots"> i
+  # index.html och Disallow-raderna i public/robots.txt. Husbyggena for
+  # Essensia och LinnArtistry behaller rubriken, se vite.config.ts.
 </IfModule>
 
 <IfModule mod_deflate.c>
