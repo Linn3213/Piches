@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import type { Settings as SettingsRow } from "@/types/db";
 import { Button, Card, Checkbox, Field, Input, Loading, PageHeader } from "@/components/ui";
+import { Uttag } from "@/components/Uttag";
 
 // Bara de falt som faktiskt ar tal. Tidigare tog den har typen med aven
 // text- och boolean-falten, vilket gjorde att Number() kunde slappas los pa
@@ -334,6 +335,8 @@ export default function Settings() {
           </p>
         </div>
       </Card>
+
+      <Uttag />
 
       <div className="flex items-center gap-3">
         <Button
