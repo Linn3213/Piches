@@ -22,6 +22,14 @@ import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
  *
  * Körningen loggas alltid, med egna siffror för varje del, så att "det fanns
  * inget att skicka" går att skilja från "jobbet kördes aldrig".
+ *
+ * SMTP-NAMNEN, aug 2026: funktionen läste SMTP_USERNAME och SMTP_PASSWORD,
+ * men hemligheterna som faktiskt finns i projektet heter HOSTINGER_SMTP_USER
+ * och HOSTINGER_SMTP_PASSWORD, samma som auth-email-hook redan använder.
+ * Namnen var kopierade från Learnnds send-reminders, som använder de gamla och
+ * DÄRFÖR heller aldrig har skickat en enda påminnelse. Resultatet här var att
+ * varje körning kraschade och alla påminnelser uteblev. Läs HOSTINGER-namnen
+ * först, med de gamla som reserv.
  */
 
 const SISTA_VECKAN_DAGAR = 7
@@ -44,6 +52,28 @@ type Abonnemang = {
 }
 
 type KontoSort = 'prov_3_dagar' | 'prov_sista_dagen' | 'betalning_stoppade'
+
+/** Skickar felet till felkanalen så en tyst krasch aldrig blir tyst igen. */
+async function larmaFelkanal(fel: unknown) {
+  const token = Deno.env.get('OPS_INGEST_TOKEN')
+  if (!token) return
+  try {
+    await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/ops-alert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-ops-token': token },
+      body: JSON.stringify({
+        app: 'piches',
+        source: 'edge',
+        level: 'error',
+        message: `piches-radar-mail: ${fel instanceof Error ? fel.message : String(fel)}`,
+        stack: fel instanceof Error ? fel.stack : null,
+        context: { funktion: 'piches-radar-mail' },
+      }),
+    })
+  } catch {
+    // Larmet får aldrig sänka körningen.
+  }
+}
 
 Deno.serve(async (req) => {
   // Fail-closed. Saknas hemligheten nekas allt, den släpps aldrig igenom av
@@ -209,18 +239,25 @@ Deno.serve(async (req) => {
       .in('user_id', [...licensPerAnvandare.keys(), '00000000-0000-0000-0000-000000000000'])
     const namn = new Map((varumarken ?? []).map((b) => [b.id as string, b.name as string]))
 
-    const smtpUser = Deno.env.get('SMTP_USERNAME')
-    const smtpPass = Deno.env.get('SMTP_PASSWORD')
+    // HOSTINGER-namnen först: det är de som faktiskt är satta i projektet och
+    // som auth-email-hook redan använder. De gamla namnen läses som reserv.
+    const smtpUser = Deno.env.get('HOSTINGER_SMTP_USER') ?? Deno.env.get('SMTP_USERNAME')
+    const smtpPass = Deno.env.get('HOSTINGER_SMTP_PASSWORD') ?? Deno.env.get('SMTP_PASSWORD')
     if (!smtpUser || !smtpPass) {
       throw new Error(
-        `SMTP_USERNAME eller SMTP_PASSWORD saknas, ${hittade} radarmejl och ${kontoHittade} kontomejl väntar`,
+        `HOSTINGER_SMTP_USER eller HOSTINGER_SMTP_PASSWORD saknas, ${hittade} radarmejl och ${kontoHittade} kontomejl väntar`,
       )
     }
 
     smtp = new SMTPClient({
       connection: {
-        hostname: Deno.env.get('SMTP_HOSTNAME') ?? 'smtp.hostinger.com',
-        port: Number(Deno.env.get('SMTP_PORT') ?? '465'),
+        hostname:
+          Deno.env.get('HOSTINGER_SMTP_HOST') ??
+          Deno.env.get('SMTP_HOSTNAME') ??
+          'smtp.hostinger.com',
+        port: Number(
+          Deno.env.get('HOSTINGER_SMTP_PORT') ?? Deno.env.get('SMTP_PORT') ?? '465',
+        ),
         tls: true,
         auth: { username: smtpUser, password: smtpPass },
       },
@@ -280,12 +317,18 @@ Deno.serve(async (req) => {
   } catch (e) {
     felText = String(e).slice(0, 400)
     console.error('piches-radar-mail:', e)
+    await larmaFelkanal(e)
   } finally {
     try {
       await smtp?.close()
     } catch {
       // En stängning som strular får aldrig radera resultatet av körningen.
     }
+  }
+
+  // Mejl som gick sönder ett och ett syns bara här, så de ska också larma.
+  if (misslyckade > 0 && felText) {
+    await larmaFelkanal(new Error(`${misslyckade} utskick misslyckades: ${felText}`))
   }
 
   await logga(supabase, {

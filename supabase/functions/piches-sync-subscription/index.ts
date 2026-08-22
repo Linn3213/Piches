@@ -77,7 +77,14 @@ Deno.serve(async (req) => {
     })
     const abonnemang = await stripe.subscriptions.retrieve(rad.stripe_subscription_id)
 
-    const periodSlut = (abonnemang as unknown as { current_period_end?: number }).current_period_end
+    // Samma sak har: faltet ligger antingen pa roten eller pa forsta raden,
+    // beroende pa API-version. Las bada, sa slipper vi en tyst null som far
+    // appen att fraga Stripe vid varje sidladdning for evigt.
+    const o = abonnemang as unknown as {
+      current_period_end?: number
+      items?: { data?: { current_period_end?: number }[] }
+    }
+    const periodSlut = o.current_period_end ?? o.items?.data?.[0]?.current_period_end
     const nivaFranStripe = abonnemang.metadata?.tier
     const { data: uppdaterad } = await supabase
       .from('piches_subscriptions')

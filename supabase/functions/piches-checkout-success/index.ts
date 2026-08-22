@@ -11,6 +11,51 @@ import Stripe from 'https://esm.sh/stripe@18.5.0'
  * fungera, vilket är hela poängen: en kund som betalat ska aldrig bli
  * stående utanför för att en hemlighet råkat vara osatt.
  */
+/**
+ * Periodens slut, oavsett var Stripe lagt det.
+ *
+ * Faltet current_period_end låg länge på prenumerationens rot och flyttades i
+ * en senare API-version ner till raderna. Vilken form vårt konto svarar med
+ * gick inte att observera, eftersom det ännu inte finns en enda prenumeration
+ * att titta på, och en gissning här hade märkts först när första kunden betalat
+ * och hennes period aldrig uppdaterades. Läs därför båda ställena.
+ */
+function periodensSlut(sub: unknown): string | null {
+  if (!sub || typeof sub !== 'object') return null
+  const o = sub as {
+    current_period_end?: number
+    items?: { data?: { current_period_end?: number }[] }
+  }
+  const unix = o.current_period_end ?? o.items?.data?.[0]?.current_period_end ?? null
+  return unix ? new Date(unix * 1000).toISOString() : null
+}
+
+/**
+ * Larmar i felkanalen. En betalning som gar sonder utan att nagon hor det ar
+ * den dyraste sortens tystnad: kunden har dragits pengar och far ingen tillgang,
+ * och det upptacks forst nar hon hor av sig arg, om hon gor det.
+ */
+async function larmaFelkanal(fel: unknown, funktion: string) {
+  const token = Deno.env.get('OPS_INGEST_TOKEN')
+  if (!token) return
+  try {
+    await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/ops-alert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-ops-token': token },
+      body: JSON.stringify({
+        app: 'piches',
+        source: 'edge',
+        level: 'error',
+        message: `${funktion}: ${fel instanceof Error ? fel.message : String(fel)}`,
+        stack: fel instanceof Error ? fel.stack : null,
+        context: { funktion },
+      }),
+    })
+  } catch {
+    // Larmet far aldrig sanka sjalva funktionen.
+  }
+}
+
 Deno.serve(async (req) => {
   const url = new URL(req.url)
   const sessionId = url.searchParams.get('session_id')
@@ -39,10 +84,30 @@ Deno.serve(async (req) => {
 
     const subscription = session.subscription as Stripe.Subscription | string | null
     const subId = typeof subscription === 'string' ? subscription : subscription?.id ?? null
-    const periodSlut =
-      typeof subscription === 'object' && subscription && 'current_period_end' in subscription
-        ? new Date((subscription as { current_period_end: number }).current_period_end * 1000).toISOString()
-        : null
+
+    // Hämta prenumerationen färsk i stället för att lita på det som råkade
+    // följa med sessionen, så att hela objektet finns.
+    let fullSub: Stripe.Subscription | null = null
+    if (subId) {
+      try {
+        fullSub = await stripe.subscriptions.retrieve(subId)
+      } catch (e) {
+        console.error('piches-checkout-success: kunde inte hämta prenumerationen', e)
+      }
+    }
+    const periodSlut = periodensSlut(fullSub ?? subscription)
+    if (subId && !periodSlut) {
+      // Tyst null här hade betytt att appen frågar Stripe vid varje sidladdning
+      // för evigt, utan att någon förstår varför. Namnge det i stället.
+      console.error(
+        'piches-checkout-success: hittade inget periodslut på prenumerationen',
+        subId,
+      )
+      await larmaFelkanal(
+        new Error(`inget periodslut på prenumeration ${subId}`),
+        'piches-checkout-success',
+      )
+    }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -62,6 +127,7 @@ Deno.serve(async (req) => {
     return tillbaka('prenumeration=klar')
   } catch (error) {
     console.error('piches-checkout-success error:', error)
+    await larmaFelkanal(error, 'piches-checkout-success')
     return tillbaka('prenumeration=fel')
   }
 })

@@ -22,6 +22,32 @@ const PLANS: Record<string, { label: string; amountOre: number; beskrivning: str
   },
 }
 
+/**
+ * Larmar i felkanalen. En betalning som gar sonder utan att nagon hor det ar
+ * den dyraste sortens tystnad: kunden har dragits pengar och far ingen tillgang,
+ * och det upptacks forst nar hon hor av sig arg, om hon gor det.
+ */
+async function larmaFelkanal(fel: unknown, funktion: string) {
+  const token = Deno.env.get('OPS_INGEST_TOKEN')
+  if (!token) return
+  try {
+    await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/ops-alert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-ops-token': token },
+      body: JSON.stringify({
+        app: 'piches',
+        source: 'edge',
+        level: 'error',
+        message: `${funktion}: ${fel instanceof Error ? fel.message : String(fel)}`,
+        stack: fel instanceof Error ? fel.stack : null,
+        context: { funktion },
+      }),
+    })
+  } catch {
+    // Larmet far aldrig sanka sjalva funktionen.
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -126,6 +152,7 @@ Deno.serve(async (req) => {
     return json({ url: session.url })
   } catch (error) {
     console.error('piches-create-checkout error:', error)
+    await larmaFelkanal(error, 'piches-create-checkout')
     return json({ error: 'Kunde inte starta betalningen. Försök igen.' }, 500)
   }
 })
