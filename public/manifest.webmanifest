@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Piches",
+  "short_name": "Piches",
+  "description": "Creatorverktyget som håller ihop uppdrag, betalning och användningsrätt.",
+  "start_url": "/",
+  "display": "standalone",
+  "lang": "sv",
+  "background_color": "#fbf9f6",
+  "theme_color": "#3f694e",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

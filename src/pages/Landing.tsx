@@ -96,6 +96,27 @@ const MOTORN = [
   },
 ];
 
+const SKARMAR = [
+  {
+    fil: "rattigheter.webp",
+    alt: "Rättighetsvyn i Piches med två licenser, en som går ut om nio dagar och en som redan gått ut, båda med ett färdigt förnyelsepris och en skickbar text.",
+    rubrik: "Rättigheterna.",
+    text: "Varje licens har ett slutdatum, ett föreslaget förlängningspris och ett färdigt meddelande att skicka. Den som redan gått ut ligger kvar, för den är fortfarande värd pengar.",
+  },
+  {
+    fil: "idag.webp",
+    alt: "Startsidan i Piches med en lista över vad som behöver göras idag, bland annat två förlängningar och en offert som väntar.",
+    rubrik: "Startsidan.",
+    text: "En lista över vad som faktiskt behöver göras idag, sorterad efter vad som kostar mest att skjuta upp.",
+  },
+  {
+    fil: "lonsamhet.webp",
+    alt: "Lönsamhetsvyn i Piches som visar timpenning, hittade läckor i kronor och vägen till månadens mål.",
+    rubrik: "Lönsamheten.",
+    text: "Vad du faktiskt får per timme, var pengarna läcker och hur många uppdrag som är kvar till månadens mål.",
+  },
+];
+
 const FRAGOR = [
   {
     fraga: "Behöver jag ett kort för att prova?",
@@ -153,6 +174,42 @@ export default function Landing() {
             <p className="text-body-md text-on-surface-variant">
               Inget kort, ingen bindning, uppsägning när du vill.
             </p>
+          </div>
+        </section>
+
+        {/* SKARMARNA.
+            Sidan var ren text, och en produktsida utan en bild pa produkten
+            gar inte att salja. Bilderna ar riktiga skarmdumpar tagna i
+            produktion, inte mockuper, med en pahittad kreatörs månad i sig. */}
+        <section className="border-t border-outline-variant/40 py-14 md:py-20">
+          <p className="text-label-caps uppercase text-primary">Så ser det ut</p>
+          <h2 className="mt-3 max-w-3xl text-headline-lg text-on-surface md:text-[36px]">
+            Det här är hela appen, inte en skiss
+          </h2>
+          <p className="mt-4 max-w-2xl text-body-lg text-on-surface-variant">
+            Bilderna är tagna rakt ur den skarpa appen med ett påhittat konto i, så att du ser
+            exakt vad du får innan du lämnar ifrån dig en mejladress.
+          </p>
+
+          <div className="mt-9 space-y-12">
+            {SKARMAR.map((s) => (
+              <figure key={s.fil} className="m-0">
+                <div className="overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest shadow-soft">
+                  <img
+                    src={`${import.meta.env.BASE_URL}skarmar/${s.fil}`}
+                    alt={s.alt}
+                    width={1440}
+                    height={980}
+                    loading="lazy"
+                    className="block w-full"
+                  />
+                </div>
+                <figcaption className="mt-3 max-w-2xl">
+                  <span className="text-title-md text-on-surface">{s.rubrik}</span>{" "}
+                  <span className="text-body-md text-on-surface-variant">{s.text}</span>
+                </figcaption>
+              </figure>
+            ))}
           </div>
         </section>
 

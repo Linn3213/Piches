@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useBrands, useCreateBrand } from "@/hooks/useBrands";
 import { useCreatePitch, usePitches } from "@/hooks/usePitches";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
+import { useFyllMedExempel, useHarExempel } from "@/hooks/useExempel";
 import { BrandForm } from "@/components/BrandForm";
 import { PitchForm } from "@/components/PitchForm";
 import { Button, Card, Field, Icon, Input, Modal } from "@/components/ui";
@@ -20,6 +21,8 @@ import { Button, Card, Field, Icon, Input, Modal } from "@/components/ui";
  * klart för något som inte finns.
  */
 export function Onboarding() {
+  const { data: harExempel } = useHarExempel();
+  const fyllMedExempel = useFyllMedExempel();
   const { data: settings } = useSettings();
   const { data: brands } = useBrands();
   const { data: pitches } = usePitches();
@@ -154,6 +157,36 @@ export function Onboarding() {
             </li>
           ))}
         </ol>
+
+        {/* VÄGEN IN FÖR DEN SOM INTE VILL KNAPPA FÖRST.
+            En ny användare mötte annars en helt tom app och måste lägga en
+            kvart på inmatning innan något alls syntes. Ingen gör det på ett
+            verktyg hon ännu inte vet om hon vill ha, och därför tog
+            provperioderna slut utan att någon förstått vad hon provade. */}
+        {!harExempel && (
+          <div className="mt-5 rounded-xl border border-outline-variant/40 bg-surface-container-lowest p-5">
+            <p className="text-title-md text-on-surface">Vill du se det ifyllt först?</p>
+            <p className="mt-1.5 max-w-prose text-body-md text-on-surface-variant">
+              Vi lägger in en påhittad månad med sex uppdrag, två licenser och en förnyelse som
+              snart går ut, så att du ser hur appen ser ut när den jobbar. Allt är märkt som
+              exempel och försvinner med ett klick.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Button
+                variant="ghost"
+                disabled={fyllMedExempel.isPending}
+                onClick={() => fyllMedExempel.mutate()}
+              >
+                {fyllMedExempel.isPending ? "Fyller..." : "Visa med exempel"}
+              </Button>
+              {fyllMedExempel.isError && (
+                <span className="text-body-md text-error" role="alert">
+                  Det gick inte att lägga in exemplen. Ladda om sidan och försök igen.
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           {allDone ? (

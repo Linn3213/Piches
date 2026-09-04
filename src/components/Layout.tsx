@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui";
 import { useExpiryRadar } from "@/hooks/useLicenses";
 import { BRAND_LABEL } from "@/lib/brand";
 import { AccessGate } from "@/components/AccessGate";
+import { ExempelBanderoll } from "@/components/ExempelBanderoll";
 
 const NAV = [
   { to: "/", label: "Idag", icon: "dashboard", end: true },
@@ -110,6 +111,7 @@ export function Layout() {
 
       <main className="mx-auto max-w-6xl px-5 pb-28 pt-6 md:px-10 md:pb-14 md:pt-10">
         <AccessGate>
+          <ExempelBanderoll />
           <Outlet />
         </AccessGate>
       </main>
