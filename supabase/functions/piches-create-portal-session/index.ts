@@ -37,19 +37,26 @@ async function stripeSandlada(): Promise<boolean> {
   }
 }
 
-/** Nyckeln for det lage appen star i just nu. */
+/**
+ * Nyckeln for det lage appen star i just nu.
+ *
+ * EN SLAGEN STROMBRYTARE UTAN NYCKEL FAR ALDRIG STANGA KASSAN. Forsta
+ * versionen kastade ett fel har. Raden stod pa "pa" medan
+ * STRIPE_SECRET_KEY_TEST saknades, och da svarade kassan med ett fel for VARJE
+ * besokare, i alla apparna, i tva och en halv timme. Ett brutet kop kostar
+ * alltid mer an ett testkop som blir skarpt, sa vi stannar i skarpt lage och
+ * skriker i loggen i stallet for att stanga butiken.
+ */
 async function stripeNyckeln(): Promise<string> {
-  const sandlada = await stripeSandlada();
-  const n = sandlada
-    ? Deno.env.get("STRIPE_SECRET_KEY_TEST") ?? ""
-    : Deno.env.get("STRIPE_SECRET_KEY") ?? "";
-  if (!n) {
-    throw new Error(
-      sandlada
-        ? "Stripe star i sandlada men STRIPE_SECRET_KEY_TEST saknas. Ingenting gjordes, for annars hade kortet dragits pa riktigt."
-        : "STRIPE_SECRET_KEY saknas.",
+  const onskad = await stripeSandlada();
+  const testnyckel = Deno.env.get("STRIPE_SECRET_KEY_TEST") ?? "";
+  if (onskad && !testnyckel) {
+    console.error(
+      "SANDLADAN AR PASLAGEN MEN STRIPE_SECRET_KEY_TEST SAKNAS. Kor SKARPT sa att kunder kan handla. Satt hemligheten, eller sla av laget.",
     );
   }
+  const n = onskad && testnyckel ? testnyckel : Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+  if (!n) throw new Error("STRIPE_SECRET_KEY saknas.");
   return n;
 }
 
