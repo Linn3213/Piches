@@ -20,6 +20,7 @@ import Tasks from "@/pages/Tasks";
 import Settings from "@/pages/Settings";
 import Konto from "@/pages/Konto";
 import Landing from "@/pages/Landing";
+import Admin from "@/pages/Admin";
 
 function NotFound() {
   return (
@@ -112,6 +113,9 @@ function AppRutter() {
           <Route path="uppgifter" element={<Tasks />} />
           <Route path="installningar" element={<Settings />} />
           <Route path="konto" element={<Konto />} />
+          {/* Adminvyn skyddas i DATABASEN, inte har. Rutten far finnas for
+              alla, funktionen bakom svarar bara administratoren. */}
+          <Route path="konton" element={<Admin />} />
           {/* En felstavad adress ska aldrig ge en tom yta utan vag tillbaka. */}
           <Route path="*" element={<NotFound />} />
         </Route>

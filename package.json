@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && npm run prerender",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "dev:essensia": "vite --mode essensia",
@@ -13,7 +13,8 @@
     "build:essensia": "tsc --noEmit && vite build --mode essensia",
     "build:linnartistry": "tsc --noEmit && vite build --mode linnartistry",
     "build:all": "npm run build && npm run build:essensia && npm run build:linnartistry",
-    "deploy": "node scripts/deploy-hostinger.mjs"
+    "deploy": "node scripts/deploy-hostinger.mjs",
+    "prerender": "node scripts/prerender.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.0",
@@ -30,6 +31,7 @@
     "@vitejs/plugin-react-swc": "^3.11.0",
     "archiver": "^8.0.0",
     "autoprefixer": "^10.4.21",
+    "playwright": "^1.60.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "tus-js-client": "^4.3.1",

@@ -8,6 +8,7 @@ import { useExpiryRadar } from "@/hooks/useLicenses";
 import { BRAND_LABEL } from "@/lib/brand";
 import { AccessGate } from "@/components/AccessGate";
 import { ExempelBanderoll } from "@/components/ExempelBanderoll";
+import { useArAdmin } from "@/hooks/useArAdmin";
 
 const NAV = [
   { to: "/", label: "Idag", icon: "dashboard", end: true },
@@ -42,9 +43,13 @@ const MOBILNAV = NAV.filter((n) => ["/", "/uppdrag", "/rattigheter", "/pris"].in
 
 const MER = [...NAV.filter((n) => !MOBILNAV.includes(n)), ...SECONDARY];
 
+/** Syns bara for den som faktiskt ar administrator. */
+const ADMINVAL = { to: "/konton", label: "Konton", icon: "group" };
+
 export function Layout() {
   const { signOut } = useAuth();
   const [merOppen, setMerOppen] = useState(false);
+  const { data: arAdmin } = useArAdmin();
   const plats = useLocation();
 
   // Arket ska aldrig ligga kvar over den sida man just valde.
@@ -81,6 +86,7 @@ export function Layout() {
           {SECONDARY.map((item) => (
             <SideLink key={item.to} {...item} end={false} />
           ))}
+          {arAdmin && <SideLink {...ADMINVAL} end={false} />}
         </nav>
 
         <div className="border-t border-outline-variant/30 p-4">
@@ -134,7 +140,7 @@ export function Layout() {
           <div className="pb-safe absolute bottom-0 left-0 max-h-[80vh] w-full overflow-y-auto rounded-t-3xl border-t border-outline-variant/30 bg-surface-container-low p-5 shadow-soft">
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-outline-variant" />
             <div className="space-y-1">
-              {MER.map((item) => (
+              {[...MER, ...(arAdmin ? [ADMINVAL] : [])].map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}

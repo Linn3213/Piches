@@ -49,6 +49,99 @@
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
       rel="stylesheet"
     />
+
+    <!-- STRUKTURERAD DATA.
+         Det har ar vad en AI-assistent och en sokmotor laser for att forsta VAD
+         sidan ar, utan att behova tolka texten. Utan den blir Piches en sida
+         bland andra, med den kan den citeras som ett konkret verktyg med ett
+         konkret pris. Priset star ocksa i src/lib/access.ts, och de tva maste
+         andras ihop. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://piches.essensiadesign.se/#app",
+          "name": "Piches",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Webbläsare",
+          "inLanguage": "sv-SE",
+          "url": "https://piches.essensiadesign.se/",
+          "description": "Piches håller reda på hur länge varje varumärke får använda ditt material, säger till innan licensen går ut och räknar ut vad förlängningen är värd. För svenska UGC-kreatörer.",
+          "featureList": [
+            "Utgångsradar för licenser",
+            "Exklusivitetsvakt mot konkurrerande uppdrag",
+            "Prisräknare byggd på rättigheterna",
+            "Fakturaunderlag med svensk moms",
+            "Lönsamhet per uppdrag och per timme"
+          ],
+          "offers": [
+            {
+              "@type": "Offer",
+              "name": "Solo",
+              "price": "299",
+              "priceCurrency": "SEK",
+              "description": "Per månad exklusive moms. 14 dagar gratis utan kort."
+            },
+            {
+              "@type": "Offer",
+              "name": "Studio",
+              "price": "899",
+              "priceCurrency": "SEK",
+              "description": "Per månad exklusive moms. 14 dagar gratis utan kort."
+            }
+          ],
+          "publisher": { "@id": "https://piches.essensiadesign.se/#utgivare" }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://piches.essensiadesign.se/#utgivare",
+          "name": "Essensia Design",
+          "email": "info@essensiadesign.se",
+          "url": "https://piches.essensiadesign.se/"
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://piches.essensiadesign.se/#fragor",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Behöver jag ett kort för att prova Piches?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Nej. Provperioden är 14 dagar, kräver ingen kortuppgift och övergår inte i något betalt av sig själv."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Vad gör Piches som en kalender eller ett bokföringsprogram inte gör?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Piches vet att ett varumärkes rätt att använda ditt material tar slut ett visst datum, och säger till i god tid så att du hinner sälja en förlängning i stället för att upptäcka i efterhand att materialet använts gratis."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Vem är Piches till för?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Svenska UGC-kreatörer som gör betalda varumärkessamarbeten och säljer nyttjanderätt till sitt material, oftast mellan tre och tio uppdrag i månaden."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Vad händer med mitt material om jag säger upp?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Du behåller tillgången perioden ut och allt ligger kvar efteråt. Du kan när som helst hämta ut allt som kalkylark eller som en fil."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

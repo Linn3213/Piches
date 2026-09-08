@@ -19,6 +19,7 @@ export default function Login() {
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
   const [kanSkapaKonto, setKanSkapaKonto] = useState(false);
+  const [samtycke, setSamtycke] = useState(false);
   const [busy, setBusy] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [error, setError] = useState<string | null>(initialAuthError);
@@ -60,6 +61,12 @@ export default function Login() {
         options: {
           emailRedirectTo: authRedirectUrl(window.location.origin, import.meta.env.BASE_URL),
           shouldCreateUser: skapaKonto,
+          // Samtycket följer med in i kontot i samma sekund det ges, och
+          // sparas därmed på det enda ställe som finns innan personen ens har
+          // ett abonnemang. Ett ja som bara lever i webbläsaren är inget ja.
+          data: skapaKonto
+            ? { marketing_consent: samtycke, consent_at: new Date().toISOString() }
+            : undefined,
         },
       });
 
@@ -198,6 +205,26 @@ export default function Login() {
               Du kan skapa ett nu och köra {TRIAL_DAYS} dagar utan att betala, utan kort och utan
               att binda upp dig. Är adressen felstavad ändrar du den bara och försöker igen.
             </p>
+            {/* SAMTYCKET.
+                Kontomejlen (provperioden tar slut, betalningen krånglar) gäller
+                tjänsten hon köpt och kräver inget ja. Allt som liknar tips,
+                nyheter eller erbjudanden gör det, och utan ett aktivt ja får
+                hon varken skickas något sådant eller läggas på en maillista.
+                Rutan är därför OFÖRKRYSSAD, för en förkryssad ruta är inget
+                samtycke alls. */}
+            <label className="mt-4 flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={samtycke}
+                onChange={(e) => setSamtycke(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-outline-variant text-primary focus:ring-primary"
+              />
+              <span className="text-body-md text-on-surface-variant">
+                Skicka mig tips om hur jag tar mer betalt för rättigheter, och nyheter om Piches.
+                Du kan avsluta när du vill, och du får mejl om ditt konto oavsett.
+              </span>
+            </label>
+
             <Button
               type="button"
               disabled={busy}

@@ -89,15 +89,34 @@ export function useStartTrial() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (): Promise<Subscription> => {
+      // Samtycket gavs vid registreringen och ligger på auth-användaren.
+      // Det flyttas hit så att adminvyn och utskicken kan läsa det på ett
+      // ställe, i stället för att gräva i metadata varje gång.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const meta = sessionData.session?.user.user_metadata ?? {};
+      const samtycke = meta.marketing_consent === true;
+
       const { data, error } = await supabase
         .from("piches_subscriptions")
         .insert({
           tier: "solo",
           status: "provperiod",
+          marketing_consent: samtycke,
+          consent_at: samtycke ? (meta.consent_at ?? new Date().toISOString()) : null,
         })
         .select()
         .single();
       if (error) throw error;
+
+      // Maillistan uppdateras efteråt och får aldrig sänka provperioden. Går
+      // det fel här ska hon ändå vara inne i appen, och synken görs om nästa
+      // gång statusen ändras.
+      try {
+        await anropaFunktion("piches-mailerlite", { handelse: "provperiod" });
+      } catch (e) {
+        console.error("kunde inte synka till maillistan:", e);
+      }
+
       return data as Subscription;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["subscription"] }),
