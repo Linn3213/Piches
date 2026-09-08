@@ -1,0 +1,23 @@
+# verify_jwt MASTE sta har for varje publik funktion.
+# Supabase-CLI:t satter verify_jwt = true pa allt som INTE namns i den har
+# filen, tyst och vid varje deploy. Det tog ner Learnnds och Piches kassor pa
+# en gang 2026-09-08: funktionerna svarade 401 i stallet for att oppna en
+# betalning, och ingenting i deploy-utskriften antydde det.
+
+[functions.piches-create-checkout]
+verify_jwt = false      # stoder utloggad kassa
+
+[functions.piches-checkout-success]
+verify_jwt = false      # Stripes returadress, GET
+
+[functions.piches-create-portal-session]
+verify_jwt = false      # egen kontroll av inloggning
+
+[functions.piches-sync-subscription]
+verify_jwt = false      # egen kontroll av inloggning
+
+[functions.piches-mailerlite]
+verify_jwt = false      # anropas av pg_cron utan inloggning
+
+[functions.piches-radar-mail]
+verify_jwt = false      # anropas av pg_cron utan inloggning
